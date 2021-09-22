@@ -1,0 +1,74 @@
+
+scalar Time
+
+directive @hasRole(role: Role!) on FIELD_DEFINITION
+directive @userName(username: String!) on SUBSCRIPTION
+
+enum Role {
+  ADMIN
+  USER
+}
+
+type Room {
+  code: ID!
+  media: Media!
+  actions: [Action!]!
+  members: [User!]!
+  timestamp: Int!
+}
+
+type Media {
+  uri: String!
+  title: String!
+}
+
+interface Action {
+  createdBy: String!
+  createdAt: Time!
+  payload: String!
+  actionType: ActionType!
+}
+
+enum ActionType {
+  MESSAGE,
+  TYPING,
+  PAUSE,
+  PLAY,
+  SEEK,
+  UPDATE
+}
+
+type User {
+  name: String!
+  photoUri: String!
+}
+
+type Query {
+  media:[Media!]!
+  room(code:ID!): Room
+}
+
+input MediaInput {
+  uri: String!
+}
+
+input MessageInput {
+  createdBy: String!
+  createdAt: String!
+  payload: String!
+}
+
+
+type Mutation {
+  createRoom(roomCode:String!,uri:MediaInput!): Room!
+  sendMessage(roomCode: String!,message: MessageInput!): Action!
+  pause(roomCode: String!): Boolean @hasRole(role: ADMIN)
+  play(roomCode: String!): Boolean @hasRole(role: ADMIN)
+  seek(roomCode: String!, timeStamp: Int!): Boolean @hasRole(role: ADMIN)
+  update(roomCode: String!, timeStamp: Int!): Boolean @hasRole(role: ADMIN)
+}
+
+type Subscription {
+  messages(roomCode: String!): Action!
+  timeupdate(roomCode: String!): Int!
+}
