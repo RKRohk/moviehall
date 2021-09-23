@@ -19,10 +19,10 @@ type Room {
 
 type Media {
   uri: String!
-  title: String!
+  title: String
 }
 
-interface Action {
+type Action {
   createdBy: String!
   createdAt: Time!
   payload: String!
@@ -60,7 +60,7 @@ input MessageInput {
 
 
 type Mutation {
-  createRoom(roomCode:String!,uri:MediaInput!): Room!
+  createRoom(uri:MediaInput!): Room!
   sendMessage(roomCode: String!,message: MessageInput!): Action!
   pause(roomCode: String!): Boolean @hasRole(role: ADMIN)
   play(roomCode: String!): Boolean @hasRole(role: ADMIN)

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -48,13 +49,20 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Action struct {
+		ActionType func(childComplexity int) int
+		CreatedAt  func(childComplexity int) int
+		CreatedBy  func(childComplexity int) int
+		Payload    func(childComplexity int) int
+	}
+
 	Media struct {
 		Title func(childComplexity int) int
 		URI   func(childComplexity int) int
 	}
 
 	Mutation struct {
-		CreateRoom  func(childComplexity int, roomCode string, uri model.MediaInput) int
+		CreateRoom  func(childComplexity int, uri model.MediaInput) int
 		Pause       func(childComplexity int, roomCode string) int
 		Play        func(childComplexity int, roomCode string) int
 		Seek        func(childComplexity int, roomCode string, timeStamp int) int
@@ -87,8 +95,8 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	CreateRoom(ctx context.Context, roomCode string, uri model.MediaInput) (*model.Room, error)
-	SendMessage(ctx context.Context, roomCode string, message model.MessageInput) (model.Action, error)
+	CreateRoom(ctx context.Context, uri model.MediaInput) (*model.Room, error)
+	SendMessage(ctx context.Context, roomCode string, message model.MessageInput) (*model.Action, error)
 	Pause(ctx context.Context, roomCode string) (*bool, error)
 	Play(ctx context.Context, roomCode string) (*bool, error)
 	Seek(ctx context.Context, roomCode string, timeStamp int) (*bool, error)
@@ -99,7 +107,7 @@ type QueryResolver interface {
 	Room(ctx context.Context, code string) (*model.Room, error)
 }
 type SubscriptionResolver interface {
-	Messages(ctx context.Context, roomCode string) (<-chan model.Action, error)
+	Messages(ctx context.Context, roomCode string) (<-chan *model.Action, error)
 	Timeupdate(ctx context.Context, roomCode string) (<-chan int, error)
 }
 
@@ -117,6 +125,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Action.actionType":
+		if e.complexity.Action.ActionType == nil {
+			break
+		}
+
+		return e.complexity.Action.ActionType(childComplexity), true
+
+	case "Action.createdAt":
+		if e.complexity.Action.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Action.CreatedAt(childComplexity), true
+
+	case "Action.createdBy":
+		if e.complexity.Action.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.Action.CreatedBy(childComplexity), true
+
+	case "Action.payload":
+		if e.complexity.Action.Payload == nil {
+			break
+		}
+
+		return e.complexity.Action.Payload(childComplexity), true
 
 	case "Media.title":
 		if e.complexity.Media.Title == nil {
@@ -142,7 +178,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateRoom(childComplexity, args["roomCode"].(string), args["uri"].(model.MediaInput)), true
+		return e.complexity.Mutation.CreateRoom(childComplexity, args["uri"].(model.MediaInput)), true
 
 	case "Mutation.pause":
 		if e.complexity.Mutation.Pause == nil {
@@ -400,10 +436,10 @@ type Room {
 
 type Media {
   uri: String!
-  title: String!
+  title: String
 }
 
-interface Action {
+type Action {
   createdBy: String!
   createdAt: Time!
   payload: String!
@@ -441,7 +477,7 @@ input MessageInput {
 
 
 type Mutation {
-  createRoom(roomCode:String!,uri:MediaInput!): Room!
+  createRoom(uri:MediaInput!): Room!
   sendMessage(roomCode: String!,message: MessageInput!): Action!
   pause(roomCode: String!): Boolean @hasRole(role: ADMIN)
   play(roomCode: String!): Boolean @hasRole(role: ADMIN)
@@ -493,24 +529,15 @@ func (ec *executionContext) dir_userName_args(ctx context.Context, rawArgs map[s
 func (ec *executionContext) field_Mutation_createRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["roomCode"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roomCode"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["roomCode"] = arg0
-	var arg1 model.MediaInput
+	var arg0 model.MediaInput
 	if tmp, ok := rawArgs["uri"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("uri"))
-		arg1, err = ec.unmarshalNMediaInput2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐMediaInput(ctx, tmp)
+		arg0, err = ec.unmarshalNMediaInput2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐMediaInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["uri"] = arg1
+	args["uri"] = arg0
 	return args, nil
 }
 
@@ -751,6 +778,146 @@ func (ec *executionContext) _subscriptionMiddleware(ctx context.Context, obj *as
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _Action_createdBy(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Action",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Action_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Action",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Action_payload(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Action",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Payload, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Action_actionType(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Action",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActionType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.ActionType)
+	fc.Result = res
+	return ec.marshalNActionType2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐActionType(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Media_uri(ctx context.Context, field graphql.CollectedField, obj *model.Media) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -811,14 +978,11 @@ func (ec *executionContext) _Media_title(ctx context.Context, field graphql.Coll
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*string)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createRoom(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -846,7 +1010,7 @@ func (ec *executionContext) _Mutation_createRoom(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateRoom(rctx, args["roomCode"].(string), args["uri"].(model.MediaInput))
+		return ec.resolvers.Mutation().CreateRoom(rctx, args["uri"].(model.MediaInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -900,9 +1064,9 @@ func (ec *executionContext) _Mutation_sendMessage(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.Action)
+	res := resTmp.(*model.Action)
 	fc.Result = res
-	return ec.marshalNAction2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐAction(ctx, field.Selections, res)
+	return ec.marshalNAction2ᚖgithubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐAction(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_pause(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1515,7 +1679,7 @@ func (ec *executionContext) _Subscription_messages(ctx context.Context, field gr
 		return nil
 	}
 	return func() graphql.Marshaler {
-		res, ok := <-resTmp.(<-chan model.Action)
+		res, ok := <-resTmp.(<-chan *model.Action)
 		if !ok {
 			return nil
 		}
@@ -1523,7 +1687,7 @@ func (ec *executionContext) _Subscription_messages(ctx context.Context, field gr
 			w.Write([]byte{'{'})
 			graphql.MarshalString(field.Alias).MarshalGQL(w)
 			w.Write([]byte{':'})
-			ec.marshalNAction2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐAction(ctx, field.Selections, res).MarshalGQL(w)
+			ec.marshalNAction2ᚖgithubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐAction(ctx, field.Selections, res).MarshalGQL(w)
 			w.Write([]byte{'}'})
 		})
 	}
@@ -2839,18 +3003,51 @@ func (ec *executionContext) unmarshalInputMessageInput(ctx context.Context, obj 
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _Action(ctx context.Context, sel ast.SelectionSet, obj model.Action) graphql.Marshaler {
-	switch obj := (obj).(type) {
-	case nil:
-		return graphql.Null
-	default:
-		panic(fmt.Errorf("unexpected type %T", obj))
-	}
-}
-
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var actionImplementors = []string{"Action"}
+
+func (ec *executionContext) _Action(ctx context.Context, sel ast.SelectionSet, obj *model.Action) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, actionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Action")
+		case "createdBy":
+			out.Values[i] = ec._Action_createdBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._Action_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "payload":
+			out.Values[i] = ec._Action_payload(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "actionType":
+			out.Values[i] = ec._Action_actionType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var mediaImplementors = []string{"Media"}
 
@@ -2870,9 +3067,6 @@ func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "title":
 			out.Values[i] = ec._Media_title(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3335,13 +3529,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // region    ***************************** type.gotpl *****************************
 
 func (ec *executionContext) marshalNAction2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐAction(ctx context.Context, sel ast.SelectionSet, v model.Action) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._Action(ctx, sel, v)
+	return ec._Action(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNAction2ᚕgithubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐActionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Action) graphql.Marshaler {
@@ -3386,6 +3574,26 @@ func (ec *executionContext) marshalNAction2ᚕgithubᚗcomᚋrkrohkᚋmoviehall�
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNAction2ᚖgithubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐAction(ctx context.Context, sel ast.SelectionSet, v *model.Action) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Action(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNActionType2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐActionType(ctx context.Context, v interface{}) (model.ActionType, error) {
+	var res model.ActionType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNActionType2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐActionType(ctx context.Context, sel ast.SelectionSet, v model.ActionType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
@@ -3528,6 +3736,21 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v inter
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	res := graphql.MarshalTime(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")

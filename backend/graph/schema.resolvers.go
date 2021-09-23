@@ -6,17 +6,59 @@ package graph
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rkrohk/moviehall/graph/generated"
 	"github.com/rkrohk/moviehall/graph/model"
+	"github.com/rkrohk/moviehall/utils"
 )
 
-func (r *mutationResolver) CreateRoom(ctx context.Context, roomCode string, uri model.MediaInput) (*model.Room, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput) (*model.Room, error) {
+	r.mu.Lock()
+
+	//TODO(Set the room admin here itself)
+
+	roomCode := utils.RandomString(8)
+	newRoom := &model.Room{
+		Code:  roomCode,
+		Media: &model.Media{URI: uri.URI},
+	}
+
+	r.Rooms[roomCode] = newRoom
+
+	r.mu.Unlock()
+
+	return newRoom, nil
 }
 
-func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, message model.MessageInput) (model.Action, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, message model.MessageInput) (*model.Action, error) {
+
+	//TODO(check if user is authenticated and if user is in the room)
+	//TODO(get user from context)
+
+	r.mu.Lock()
+
+	newMessage := &model.Action{
+		CreatedBy:  message.CreatedBy,
+		CreatedAt:  time.Now(),
+		Payload:    message.Payload,
+		ActionType: model.ActionTypeMessage,
+	}
+
+	room := r.Rooms[roomCode]
+
+	if room == nil {
+		return nil, fmt.Errorf("Room %s does not exist", roomCode)
+	}
+
+	//Sending the new message to every user in the room
+	for _, observer := range room.MessageObservers {
+		observer.Action <- newMessage
+	}
+
+	r.mu.Unlock()
+
+	return newMessage, nil
 }
 
 func (r *mutationResolver) Pause(ctx context.Context, roomCode string) (*bool, error) {
@@ -41,10 +83,9 @@ func (r *queryResolver) Media(ctx context.Context) ([]*model.Media, error) {
 
 func (r *queryResolver) Room(ctx context.Context, code string) (*model.Room, error) {
 
-	//lock
 	r.mu.Lock()
 	room := r.Rooms[code]
-
+	r.mu.Unlock()
 	if room != nil {
 		return room, nil
 	}
@@ -52,8 +93,33 @@ func (r *queryResolver) Room(ctx context.Context, code string) (*model.Room, err
 	return nil, fmt.Errorf("Room %s not found", code)
 }
 
-func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<-chan model.Action, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<-chan *model.Action, error) {
+
+	room := r.Rooms[roomCode]
+
+	if room == nil {
+		return nil, fmt.Errorf("roomcode %s does not exist", roomCode)
+	}
+
+	//Start using Firebase Token ID or something later
+	userID := utils.RandomString(10)
+
+	actions := make(chan *model.Action, 1)
+	room.MessageObservers[userID] = struct {
+		Action chan *model.Action
+	}{
+		Action: actions,
+	}
+
+	go func() {
+		<-ctx.Done()
+		r.mu.Lock()
+		delete(room.MessageObservers, userID)
+		r.mu.Unlock()
+	}()
+
+	return actions, nil
+
 }
 
 func (r *subscriptionResolver) Timeupdate(ctx context.Context, roomCode string) (<-chan int, error) {

@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 )
 
-type Action interface {
-	IsAction()
+type Action struct {
+	CreatedBy  string     `json:"createdBy"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	Payload    string     `json:"payload"`
+	ActionType ActionType `json:"actionType"`
 }
 
 type Media struct {
-	URI   string `json:"uri"`
-	Title string `json:"title"`
+	URI   string  `json:"uri"`
+	Title *string `json:"title"`
 }
 
 type MediaInput struct {
