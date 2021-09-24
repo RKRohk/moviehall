@@ -3,6 +3,7 @@ module github.com/rkrohk/moviehall
 go 1.17
 
 require (
+	firebase.google.com/go/v4 v4.6.0
 	github.com/99designs/gqlgen v0.14.0
 	github.com/vektah/gqlparser/v2 v2.2.0
 )
@@ -11,9 +12,7 @@ require (
 	cloud.google.com/go v0.75.0 // indirect
 	cloud.google.com/go/firestore v1.5.0 // indirect
 	cloud.google.com/go/storage v1.10.0 // indirect
-	firebase.google.com/go/v4 v4.6.0 // indirect
 	github.com/agnivade/levenshtein v1.1.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
@@ -22,9 +21,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/mitchellh/mapstructure v0.0.0-20180203102830-a4e142e9c047 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.1.0 // indirect
-	github.com/stretchr/testify v1.5.1 // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.1 // indirect
@@ -39,5 +35,4 @@ require (
 	google.golang.org/genproto v0.0.0-20210222152913-aa3ee6e6a81c // indirect
 	google.golang.org/grpc v1.35.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/yaml.v2 v2.2.4 // indirect
 )

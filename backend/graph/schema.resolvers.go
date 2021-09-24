@@ -32,7 +32,6 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput)
 }
 
 func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, message model.MessageInput) (*model.Action, error) {
-
 	//TODO(check if user is authenticated and if user is in the room)
 	//TODO(get user from context)
 
@@ -82,7 +81,6 @@ func (r *queryResolver) Media(ctx context.Context) ([]*model.Media, error) {
 }
 
 func (r *queryResolver) Room(ctx context.Context, code string) (*model.Room, error) {
-
 	r.mu.Lock()
 	room := r.Rooms[code]
 	r.mu.Unlock()
@@ -94,7 +92,6 @@ func (r *queryResolver) Room(ctx context.Context, code string) (*model.Room, err
 }
 
 func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<-chan *model.Action, error) {
-
 	room := r.Rooms[roomCode]
 
 	if room == nil {
@@ -119,7 +116,6 @@ func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<
 	}()
 
 	return actions, nil
-
 }
 
 func (r *subscriptionResolver) Timeupdate(ctx context.Context, roomCode string) (<-chan int, error) {

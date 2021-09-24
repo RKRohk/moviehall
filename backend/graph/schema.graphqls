@@ -39,6 +39,7 @@ enum ActionType {
 }
 
 type User {
+  id: ID!
   name: String!
   photoUri: String!
 }

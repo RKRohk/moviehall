@@ -20,7 +20,7 @@ func initializeApp() *firebase.App {
 func initializeAuth(app *firebase.App) *auth.Client {
 	client, err := app.Auth(context.Background())
 	if err != nil {
-		log.Println("Error initializing authentication client %v", err)
+		log.Printf("Error initializing authentication client %v\n", err)
 	}
 	return client
 }
