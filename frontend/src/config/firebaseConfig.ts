@@ -11,5 +11,13 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const firebaseApp = firebase.apps.length > 0 ? firebase.apps[0] : firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth()
+
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+
+// eslint-disable-next-line no-restricted-globals
+if (location.hostname === 'localhost') {
+  auth.useEmulator('http://localhost:9099/');
+}
 // const analytics = getAnalytics(firebaseApp);
-export { firebaseApp }
+export { firebaseApp, auth }

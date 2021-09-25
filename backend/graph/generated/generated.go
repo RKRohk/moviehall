@@ -66,7 +66,7 @@ type ComplexityRoot struct {
 		Pause       func(childComplexity int, roomCode string) int
 		Play        func(childComplexity int, roomCode string) int
 		Seek        func(childComplexity int, roomCode string, timeStamp int) int
-		SendMessage func(childComplexity int, roomCode string, message model.MessageInput) int
+		SendMessage func(childComplexity int, roomCode string, message string) int
 		Update      func(childComplexity int, roomCode string, timeStamp int) int
 	}
 
@@ -97,7 +97,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateRoom(ctx context.Context, uri model.MediaInput) (*model.Room, error)
-	SendMessage(ctx context.Context, roomCode string, message model.MessageInput) (*model.Action, error)
+	SendMessage(ctx context.Context, roomCode string, message string) (*model.Action, error)
 	Pause(ctx context.Context, roomCode string) (*bool, error)
 	Play(ctx context.Context, roomCode string) (*bool, error)
 	Seek(ctx context.Context, roomCode string, timeStamp int) (*bool, error)
@@ -227,7 +227,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.SendMessage(childComplexity, args["roomCode"].(string), args["message"].(model.MessageInput)), true
+		return e.complexity.Mutation.SendMessage(childComplexity, args["roomCode"].(string), args["message"].(string)), true
 
 	case "Mutation.update":
 		if e.complexity.Mutation.Update == nil {
@@ -448,7 +448,7 @@ type Media {
 }
 
 type Action {
-  createdBy: String!
+  createdBy: User!
   createdAt: Time!
   payload: String!
   actionType: ActionType!
@@ -478,16 +478,12 @@ input MediaInput {
   uri: String!
 }
 
-input MessageInput {
-  createdBy: String!
-  createdAt: String!
-  payload: String!
-}
+
 
 
 type Mutation {
   createRoom(uri:MediaInput!): Room!
-  sendMessage(roomCode: String!,message: MessageInput!): Action!
+  sendMessage(roomCode: String!,message: String!): Action!
   pause(roomCode: String!): Boolean @hasRole(role: ADMIN)
   play(roomCode: String!): Boolean @hasRole(role: ADMIN)
   seek(roomCode: String!, timeStamp: Int!): Boolean @hasRole(role: ADMIN)
@@ -616,10 +612,10 @@ func (ec *executionContext) field_Mutation_sendMessage_args(ctx context.Context,
 		}
 	}
 	args["roomCode"] = arg0
-	var arg1 model.MessageInput
+	var arg1 string
 	if tmp, ok := rawArgs["message"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
-		arg1, err = ec.unmarshalNMessageInput2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐMessageInput(ctx, tmp)
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -817,9 +813,9 @@ func (ec *executionContext) _Action_createdBy(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Action_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
@@ -1061,7 +1057,7 @@ func (ec *executionContext) _Mutation_sendMessage(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().SendMessage(rctx, args["roomCode"].(string), args["message"].(model.MessageInput))
+		return ec.resolvers.Mutation().SendMessage(rctx, args["roomCode"].(string), args["message"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3004,45 +3000,6 @@ func (ec *executionContext) unmarshalInputMediaInput(ctx context.Context, obj in
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputMessageInput(ctx context.Context, obj interface{}) (model.MessageInput, error) {
-	var it model.MessageInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "createdBy":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdBy"))
-			it.CreatedBy, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "createdAt":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("createdAt"))
-			it.CreatedAt, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "payload":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("payload"))
-			it.Payload, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3746,11 +3703,6 @@ func (ec *executionContext) marshalNMedia2ᚖgithubᚗcomᚋrkrohkᚋmoviehall�
 
 func (ec *executionContext) unmarshalNMediaInput2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐMediaInput(ctx context.Context, v interface{}) (model.MediaInput, error) {
 	res, err := ec.unmarshalInputMediaInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNMessageInput2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐMessageInput(ctx context.Context, v interface{}) (model.MessageInput, error) {
-	res, err := ec.unmarshalInputMessageInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 type Action struct {
-	CreatedBy  string     `json:"createdBy"`
+	CreatedBy  *User      `json:"createdBy"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	Payload    string     `json:"payload"`
 	ActionType ActionType `json:"actionType"`
@@ -23,12 +23,6 @@ type Media struct {
 
 type MediaInput struct {
 	URI string `json:"uri"`
-}
-
-type MessageInput struct {
-	CreatedBy string `json:"createdBy"`
-	CreatedAt string `json:"createdAt"`
-	Payload   string `json:"payload"`
 }
 
 type User struct {

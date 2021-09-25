@@ -14,16 +14,14 @@ import (
 )
 
 func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput) (*model.Room, error) {
-	r.mu.Lock()
 
-	//TODO(Set the room admin here itself)
+	r.mu.Lock()
 
 	roomCode := utils.RandomString(8)
 	newRoom := &model.Room{
 		Code:  roomCode,
 		Media: &model.Media{URI: uri.URI},
 	}
-
 	r.Rooms[roomCode] = newRoom
 
 	r.mu.Unlock()
@@ -31,18 +29,14 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput)
 	return newRoom, nil
 }
 
-func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, message model.MessageInput) (*model.Action, error) {
+func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, message string) (*model.Action, error) {
 	//TODO(check if user is authenticated and if user is in the room)
+
 	//TODO(get user from context)
 
 	r.mu.Lock()
 
-	newMessage := &model.Action{
-		CreatedBy:  message.CreatedBy,
-		CreatedAt:  time.Now(),
-		Payload:    message.Payload,
-		ActionType: model.ActionTypeMessage,
-	}
+	defer r.mu.Unlock()
 
 	room := r.Rooms[roomCode]
 
@@ -50,12 +44,23 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 		return nil, fmt.Errorf("Room %s does not exist", roomCode)
 	}
 
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
+	newMessage := &model.Action{
+		CreatedBy:  user,
+		CreatedAt:  time.Now(),
+		Payload:    message,
+		ActionType: model.ActionTypeMessage,
+	}
+
 	//Sending the new message to every user in the room
 	for _, observer := range room.MessageObservers {
 		observer.Action <- newMessage
 	}
-
-	r.mu.Unlock()
 
 	return newMessage, nil
 }

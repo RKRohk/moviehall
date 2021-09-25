@@ -19,7 +19,7 @@ func VerifyAndGetUser(auth *auth.Client, idToken string) *model.User {
 	token, err := auth.VerifyIDToken(context.Background(), idToken)
 
 	if err != nil {
-		log.Printf("error verifying user with idToken %s\n", idToken)
+		log.Printf("error verifying user with idToken %v\n", err)
 		return nil
 	}
 

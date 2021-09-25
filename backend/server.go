@@ -10,6 +10,7 @@ import (
 	"github.com/rkrohk/moviehall/graph"
 	"github.com/rkrohk/moviehall/graph/generated"
 	"github.com/rkrohk/moviehall/graph/model"
+	"github.com/rkrohk/moviehall/utils"
 )
 
 const defaultPort = "8080"
@@ -27,7 +28,7 @@ func main() {
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{Rooms: map[string]*model.Room{}, Auth: auth}}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", middleWare(auth)(srv))
+	http.Handle("/query", utils.Middleware(auth)(srv))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
