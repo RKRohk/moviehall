@@ -17,14 +17,22 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput)
 
 	r.mu.Lock()
 
+	defer r.mu.Unlock()
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
 	roomCode := utils.RandomString(8)
 	newRoom := &model.Room{
-		Code:  roomCode,
-		Media: &model.Media{URI: uri.URI},
+		Code:               roomCode,
+		Media:              &model.Media{URI: uri.URI},
+		MessageObservers:   make(map[string]struct{ Action chan *model.Action }),
+		TimeStampObservers: map[string]struct{ Timestamp chan int }{},
 	}
 	r.Rooms[roomCode] = newRoom
-
-	r.mu.Unlock()
 
 	return newRoom, nil
 }
@@ -56,6 +64,8 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 		Payload:    message,
 		ActionType: model.ActionTypeMessage,
 	}
+
+	room.Actions = append(room.Actions, newMessage)
 
 	//Sending the new message to every user in the room
 	for _, observer := range room.MessageObservers {
