@@ -3,6 +3,7 @@ import { StyledFirebaseAuth } from "react-firebaseui"
 import firebase from 'firebase'
 import { auth, firebaseApp } from "./config/firebaseConfig";
 import { useEffect, useState } from "react";
+import Home from "./pages/Home";
 // Configure FirebaseUI.
 const uiConfig = {
   // Popup signin flow rather than redirect flow.
@@ -28,12 +29,15 @@ function App() {
   const [signedin, setSignedIn] = useState(false)
   if (!signedin) {
     return <div>
+      <Home />
+
       <p>Please Sign In</p>
       <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth} />
     </div>
   }
   else {
     return <>
+      <Home />
       <p>Signed In</p>
       <p>Welcome {auth.currentUser?.displayName}</p>
       <img src={auth.currentUser?.photoURL ?? " "} />
