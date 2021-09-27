@@ -1,49 +1,32 @@
 import "./index.css";
-import { StyledFirebaseAuth } from "react-firebaseui"
 import firebase from 'firebase'
-import { auth, firebaseApp } from "./config/firebaseConfig";
-import { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Home from "./pages/Home";
+
+import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
+import { FirebaseContext } from "./context/firebaseContext";
+import VideoPlayer from "./components/VideoPlayer";
 // Configure FirebaseUI.
 const uiConfig = {
-  // Popup signin flow rather than redirect flow.
   signInFlow: 'popup',
-  // Redirect to /signedIn after sign in is successful. Alternatively you can provide a callbacks.signInSuccess function.
   signInSuccessUrl: '/signedIn',
-  // We will display Google and Facebook as auth providers.
   signInOptions: [
     firebase.auth.EmailAuthProvider.PROVIDER_ID,
     firebase.auth.GoogleAuthProvider.PROVIDER_ID,
   ],
 };
 function App() {
-
-  useEffect(() => {
-    const unregisterAuthObserver = auth.onAuthStateChanged(user => {
-      setSignedIn(!!user);
-      console.log(user?.getIdToken())
-    });
-    return () => unregisterAuthObserver(); // Make sure we un-register Firebase observers when the component unmounts.
-  }, []);
-
-  const [signedin, setSignedIn] = useState(false)
-  if (!signedin) {
-    return <div>
-      <Home />
-
-      <p>Please Sign In</p>
-      <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth} />
-    </div>
-  }
-  else {
-    return <>
-      <Home />
-      <p>Signed In</p>
-      <p>Welcome {auth.currentUser?.displayName}</p>
-      <img src={auth.currentUser?.photoURL ?? " "} />
-      <button onClick={() => auth.signOut()}>SignOut</button>
-    </>
-  }
+  const { auth } = useContext(FirebaseContext)
+  return <Router>
+    <Switch>
+      <Route path="/room/:id">
+        {auth.currentUser ? <VideoPlayer /> : <Redirect to="/login" from={"/"} />}
+      </Route>
+      <Route path="/">
+        <Home />
+      </Route>
+    </Switch>
+  </Router>
 }
 
 export default App;
