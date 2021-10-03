@@ -1,12 +1,23 @@
 import MessageAlert from "./MessagAlert";
 import { ChevronRightIcon } from "@heroicons/react/solid";
+import MessageBox from "./MessageBox";
 
 interface ChatSectionProps {
   onClose: () => void;
 }
 const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
   return (
-    <div className="h-full w-96 rounded-2xl p-2 pb-4 bg-gray-800 text-gray-300">
+    <div
+      /**
+       * Captures the escape key (code 27) and closes the popup
+       */
+      onKeyDown={(e) => {
+        if (e.keyCode == 27) {
+          onClose();
+        }
+      }}
+      className="h-full w-96 rounded-2xl p-2 pb-4 bg-gray-800 text-gray-300"
+    >
       <button onClick={onClose} className="float-right pr-3">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -38,9 +49,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
           <MessageAlert createdBy="me" payload="HI" />
         </ul>
       </div>
-      <form className="mx-auto flex">
-        <input type="text" />
-      </form>
+      <MessageBox />
     </div>
   );
 };
