@@ -6,21 +6,31 @@ import Home from "./pages/Home";
 import { BrowserRouter as Router, Switch, Route, Redirect } from 'react-router-dom';
 import { FirebaseContext } from "./context/firebaseContext";
 import VideoPlayer from "./components/VideoPlayer";
-// Configure FirebaseUI.
-const uiConfig = {
-  signInFlow: 'popup',
-  signInSuccessUrl: '/signedIn',
-  signInOptions: [
-    firebase.auth.EmailAuthProvider.PROVIDER_ID,
-    firebase.auth.GoogleAuthProvider.PROVIDER_ID,
-  ],
-};
+import Login from "./pages/Login";
+import MovieHall from "./pages/MovieHall";
+
 function App() {
   const { auth } = useContext(FirebaseContext)
+
+  const [signedIn, setSignedIn] = useState(false)
+
+  useEffect(() => {
+    const subs = auth.onAuthStateChanged((user) => {
+      setSignedIn(!!user)
+      console.log(user)
+    })
+
+    return () => subs()
+  }, [])
+
   return <Router>
     <Switch>
+      <Route path="/login">
+        <Login />
+      </Route>
       <Route path="/room/:id">
-        {auth.currentUser ? <VideoPlayer /> : <Redirect to="/login" from={"/"} />}
+        {/* {signedIn ? <VideoPlayer /> : <Redirect to="/login" from={"/"} />} */}
+        <MovieHall />
       </Route>
       <Route path="/">
         <Home />

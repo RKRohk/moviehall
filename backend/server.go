@@ -36,7 +36,9 @@ func main() {
 	})
 
 	router := chi.NewRouter()
-
+	if auth == nil {
+		log.Fatal("Auth is nil")
+	}
 	router.Use(utils.Middleware(auth))
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
