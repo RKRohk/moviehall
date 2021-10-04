@@ -45,7 +45,6 @@ func WsAuthMiddleware(auth *auth.Client) func(ctx context.Context, initPayload t
 	fmt.Println("returning middleware")
 	return func(ctx context.Context, initPayload transport.InitPayload) (context.Context, error) {
 		fmt.Println(initPayload)
-		fmt.Println("HELLO")
 		header := initPayload.GetString("Auth")
 
 		if len(header) == 0 {

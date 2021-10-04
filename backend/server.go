@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -30,10 +31,14 @@ func main() {
 
 	newExecutableSchema := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{Rooms: map[string]*model.Room{}, Auth: auth}})
 
-	srv := handler.NewDefaultServer(newExecutableSchema)
+	srv := handler.New(newExecutableSchema)
+
+	//For graphql as graphql uses POST
+	srv.AddTransport(transport.POST{})
 
 	srv.AddTransport(transport.Websocket{
-		InitFunc: utils.WsAuthMiddleware(auth),
+		KeepAlivePingInterval: 10 * time.Second,
+		InitFunc:              utils.WsAuthMiddleware(auth),
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
