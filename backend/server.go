@@ -9,6 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
 	"github.com/rkrohk/moviehall/graph"
 	"github.com/rkrohk/moviehall/graph/generated"
 	"github.com/rkrohk/moviehall/graph/model"
@@ -33,6 +34,11 @@ func main() {
 
 	srv.AddTransport(transport.Websocket{
 		InitFunc: utils.WsAuthMiddleware(auth),
+		Upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin:     func(r *http.Request) bool { return true },
+		},
 	})
 
 	router := chi.NewRouter()

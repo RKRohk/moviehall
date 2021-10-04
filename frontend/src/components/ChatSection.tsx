@@ -1,11 +1,24 @@
 import MessageAlert from "./MessagAlert";
-import { ChevronRightIcon } from "@heroicons/react/solid";
 import MessageBox from "./MessageBox";
+import { useQuery, gql } from "@apollo/client";
+import { useContext } from "react";
+import { FirebaseContext } from "../context/firebaseContext";
+import { GET_MESSAGES_QUERY } from "../graphql/queries";
+import { GetMessages } from "../types/api";
+import { useParams } from "react-router";
 
 interface ChatSectionProps {
   onClose: () => void;
 }
 const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
+  const { auth } = useContext(FirebaseContext);
+  const { roomCode } = useParams<{ roomCode: string | undefined }>();
+
+  const { data, loading, error } = useQuery<GetMessages>(GET_MESSAGES_QUERY, {
+    variables: { roomcode: roomCode },
+    context: { headers: { Auth: `Bearer ${auth.currentUser?.getIdToken}` } },
+  });
+
   return (
     <div
       /**
@@ -36,18 +49,11 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
         <h2 className="text-center text-lg">
           You are watching #MOVIE NAME HERE
         </h2>
-        <p>Room Code</p> <button className="inline-block">Copy</button>
+        <p>Room Code {roomCode}</p>{" "}
+        <button className="inline-block">Copy</button>
       </div>
       <div className="max-h-full p-2 overflow-scroll">
-        <ul className="space-y-2 flex flex-col">
-          <MessageAlert createdBy="Rohan" payload="HI" />
-          <MessageAlert createdBy="Rohan" payload="HI" />
-          <MessageAlert createdBy="me" payload="HI" />
-          <MessageAlert createdBy="Rohan" payload="HI" />
-          <MessageAlert createdBy="Rohan" payload="HI" />
-          <MessageAlert createdBy="Rohan" payload="HI" />
-          <MessageAlert createdBy="me" payload="HI" />
-        </ul>
+        <ul className="space-y-2 flex flex-col">{data?.room?.actions}</ul>
       </div>
       <MessageBox />
     </div>
