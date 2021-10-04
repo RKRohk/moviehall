@@ -21,6 +21,7 @@ func Middleware(client *auth.Client) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			header := r.Header["Auth"]
+			fmt.Println(header)
 			if len(header) == 0 {
 				next.ServeHTTP(rw, r)
 			} else {

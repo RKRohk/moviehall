@@ -4,7 +4,7 @@ import { useQuery, gql } from "@apollo/client";
 import { useContext } from "react";
 import { FirebaseContext } from "../context/firebaseContext";
 import { GET_MESSAGES_QUERY } from "../graphql/queries";
-import { GetMessages } from "../types/api";
+import { GetMessages, GetMessagesVariables } from "../types/api";
 import { useParams } from "react-router";
 
 interface ChatSectionProps {
@@ -12,12 +12,14 @@ interface ChatSectionProps {
 }
 const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
   const { auth } = useContext(FirebaseContext);
-  const { roomCode } = useParams<{ roomCode: string | undefined }>();
+  const { roomCode } = useParams<{ roomCode: string }>();
 
-  const { data, loading, error } = useQuery<GetMessages>(GET_MESSAGES_QUERY, {
-    variables: { roomcode: roomCode },
-    context: { headers: { Auth: `Bearer ${auth.currentUser?.getIdToken}` } },
-  });
+  const { data, loading, error } = useQuery<GetMessages, GetMessagesVariables>(
+    GET_MESSAGES_QUERY,
+    {
+      variables: { roomCode },
+    }
+  );
 
   return (
     <div
@@ -53,7 +55,10 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
         <button className="inline-block">Copy</button>
       </div>
       <div className="max-h-full p-2 overflow-scroll">
-        <ul className="space-y-2 flex flex-col">{data?.room?.actions}</ul>
+        <ul className="space-y-2 flex flex-col">
+          {String(data)}
+          {String(error)}
+        </ul>
       </div>
       <MessageBox />
     </div>

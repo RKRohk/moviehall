@@ -1,12 +1,44 @@
+import { useMutation } from "@apollo/client";
 import { Transition } from "@headlessui/react";
 import { ArrowRightIcon, PaperAirplaneIcon } from "@heroicons/react/solid";
-import { Fragment, useState } from "react";
+import React, { Fragment, useContext, useEffect, useState } from "react";
+import { useParams } from "react-router";
+import { FirebaseContext } from "../context/firebaseContext";
+import { SEND_MESSAGE_MUTATION } from "../graphql/mutations";
+import { sendMessage, sendMessageVariables } from "../types/api";
 
 const MessageBox = () => {
+  const {
+    auth: { currentUser },
+  } = useContext(FirebaseContext);
   const [message, setMessage] = useState("");
+  const { roomCode } = useParams<{ roomCode: string }>();
+
+  const [addMessage] = useMutation<sendMessage, sendMessageVariables>(
+    SEND_MESSAGE_MUTATION,
+    {
+      variables: { roomCode, message },
+
+      onError: (error) => {
+        console.log(error.message);
+      },
+    }
+  );
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const idToken = await currentUser?.getIdToken();
+    console.log({ roomCode, message, idToken: idToken });
+    addMessage({
+      onError: (error) => {
+        console.error(error.message);
+      },
+    });
+    setMessage("");
+  };
 
   return (
-    <form className="mx-auto group flex space-x-2">
+    <form className="mx-auto group flex space-x-2" onSubmit={onSubmit}>
       <input
         value={message}
         onChange={(e) => setMessage(e.target.value)}

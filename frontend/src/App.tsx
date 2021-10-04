@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import MovieHall from "./pages/MovieHall";
 import {
   ApolloClient,
+  ApolloLink,
   ApolloProvider,
   HttpLink,
   InMemoryCache,
@@ -21,6 +22,7 @@ import {
 } from "@apollo/client";
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
+import { auth } from "./config/firebaseConfig";
 
 const httpLink = new HttpLink({
   uri: "/query",
@@ -50,9 +52,22 @@ const splitLink = split(
   httpLink
 );
 
+const authMiddleware = new ApolloLink((operation, forward) => {
+  // add the authorization to the headers
+  operation.setContext(async ({ headers = {} }) => ({
+    headers: {
+      ...headers,
+      Auth: `Bearer ${await auth.currentUser?.getIdToken()}` || null,
+    },
+  }));
+
+  return forward(operation);
+});
+
 const client = new ApolloClient({
-  link: splitLink,
+  link: authMiddleware.concat(splitLink),
   cache: new InMemoryCache(),
+  connectToDevTools: true,
 });
 
 function App() {

@@ -4,6 +4,29 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL mutation operation: sendMessage
+// ====================================================
+
+export interface sendMessage_sendMessage {
+  __typename: "Action";
+  payload: string;
+}
+
+export interface sendMessage {
+  sendMessage: sendMessage_sendMessage;
+}
+
+export interface sendMessageVariables {
+  roomCode: string;
+  message: string;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL query operation: GetMessages
 // ====================================================
 
@@ -31,7 +54,7 @@ export interface GetMessages {
 }
 
 export interface GetMessagesVariables {
-  roomcode: string;
+  roomCode: string;
 }
 
 /* tslint:disable */
