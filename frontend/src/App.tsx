@@ -1,14 +1,8 @@
 import "./index.css";
-import firebase from "firebase";
 import React, { useContext, useEffect, useState } from "react";
 import Home from "./pages/Home";
 
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Redirect,
-} from "react-router-dom";
+import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { FirebaseContext } from "./context/firebaseContext";
 import Login from "./pages/Login";
 import MovieHall from "./pages/MovieHall";
@@ -16,6 +10,7 @@ import {
   ApolloClient,
   ApolloLink,
   ApolloProvider,
+  from,
   HttpLink,
   InMemoryCache,
   split,
@@ -23,7 +18,7 @@ import {
 import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { auth } from "./config/firebaseConfig";
-
+import { setContext } from "@apollo/client/link/context";
 const httpLink = new HttpLink({
   uri: "/query",
 });
@@ -35,11 +30,6 @@ const wsLink = new WebSocketLink({
   },
 });
 
-// The split function takes three parameters:
-//
-// * A function that's called for each operation to execute
-// * The Link to use for an operation if the function returns a "truthy" value
-// * The Link to use for an operation if the function returns a "falsy" value
 const splitLink = split(
   ({ query }) => {
     const definition = getMainDefinition(query);
@@ -52,20 +42,20 @@ const splitLink = split(
   httpLink
 );
 
-const authMiddleware = new ApolloLink((operation, forward) => {
-  // add the authorization to the headers
-  operation.setContext(async ({ headers = {} }) => ({
+const authLink = setContext(async (_, { headers }) => {
+  // get the authentication token from local storage if it exists
+  const token = await auth.currentUser?.getIdToken();
+  // return the headers to the context so httpLink can read them
+  return {
     headers: {
       ...headers,
-      Auth: `Bearer ${await auth.currentUser?.getIdToken()}` || null,
+      Auth: `Bearer ${token}`,
     },
-  }));
-
-  return forward(operation);
+  };
 });
 
 const client = new ApolloClient({
-  link: authMiddleware.concat(splitLink),
+  link: authLink.concat(splitLink),
   cache: new InMemoryCache(),
   connectToDevTools: true,
 });

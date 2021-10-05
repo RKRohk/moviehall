@@ -42,6 +42,7 @@ export interface GetMessages_room_actions {
   createdBy: GetMessages_room_actions_createdBy;
   createdAt: any;
   payload: string;
+  actionType: ActionType;
 }
 
 export interface GetMessages_room {
@@ -62,9 +63,50 @@ export interface GetMessagesVariables {
 // @generated
 // This file was automatically generated and should not be edited.
 
+// ====================================================
+// GraphQL subscription operation: SubscribeToAction
+// ====================================================
+
+export interface SubscribeToAction_messages_createdBy {
+  __typename: "User";
+  id: string;
+  name: string;
+  photoUri: string;
+}
+
+export interface SubscribeToAction_messages {
+  __typename: "Action";
+  payload: string;
+  createdBy: SubscribeToAction_messages_createdBy;
+  createdAt: any;
+  actionType: ActionType;
+}
+
+export interface SubscribeToAction {
+  messages: SubscribeToAction_messages;
+}
+
+export interface SubscribeToActionVariables {
+  roomCode: string;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
 //==============================================================
 // START Enums and Input Objects
 //==============================================================
+
+export enum ActionType {
+  MESSAGE = "MESSAGE",
+  PAUSE = "PAUSE",
+  PLAY = "PLAY",
+  SEEK = "SEEK",
+  TYPING = "TYPING",
+  UPDATE = "UPDATE",
+}
 
 //==============================================================
 // END Enums and Input Objects

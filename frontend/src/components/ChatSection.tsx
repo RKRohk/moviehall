@@ -1,25 +1,55 @@
 import MessageAlert from "./MessagAlert";
 import MessageBox from "./MessageBox";
-import { useQuery, gql } from "@apollo/client";
-import { useContext } from "react";
+import { useQuery, gql, useSubscription } from "@apollo/client";
+import { useContext, useEffect } from "react";
 import { FirebaseContext } from "../context/firebaseContext";
 import { GET_MESSAGES_QUERY } from "../graphql/queries";
-import { GetMessages, GetMessagesVariables } from "../types/api";
+import {
+  GetMessages,
+  GetMessagesVariables,
+  SubscribeToAction,
+  SubscribeToActionVariables,
+  SubscribeToAction_messages,
+} from "../types/api";
 import { useParams } from "react-router";
+import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
 
 interface ChatSectionProps {
   onClose: () => void;
 }
 const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
-  const { auth } = useContext(FirebaseContext);
   const { roomCode } = useParams<{ roomCode: string }>();
 
-  const { data, loading, error } = useQuery<GetMessages, GetMessagesVariables>(
-    GET_MESSAGES_QUERY,
-    {
-      variables: { roomCode },
-    }
-  );
+  const { data, loading, error, subscribeToMore } = useQuery<
+    GetMessages,
+    GetMessagesVariables
+  >(GET_MESSAGES_QUERY, {
+    variables: { roomCode },
+  });
+
+  const subscribeToMessages = () =>
+    subscribeToMore({
+      document: SUBSCRIBE_TO_ACTION,
+      variables: { roomCode: roomCode },
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev;
+        const newMessage =
+          subscriptionData.data as unknown as SubscribeToAction_messages; //Very hacky implementation. Apollo and typescript really don't go together with regards to subscriptions ;__;
+
+        console.log(newMessage);
+        return Object.assign({}, prev, {
+          room: { actions: [newMessage, ...(prev.room?.actions ?? [])] },
+        });
+      },
+    });
+
+  useEffect(() => {
+    const subs = subscribeToMessages();
+
+    return () => {
+      subs();
+    };
+  }, []);
 
   return (
     <div
@@ -54,10 +84,16 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
         <p>Room Code {roomCode}</p>{" "}
         <button className="inline-block">Copy</button>
       </div>
-      <div className="max-h-full p-2 overflow-scroll">
+      <div className="max-h-96 p-2 overflow-scroll">
         <ul className="space-y-2 flex flex-col">
-          {String(data)}
-          {String(error)}
+          {loading && "loading"}
+          {error && String(error)}
+          {data?.room?.actions.map((action) => (
+            <MessageAlert
+              payload={action.payload}
+              createdBy={action.createdBy.name}
+            />
+          ))}
         </ul>
       </div>
       <MessageBox />

@@ -10,7 +10,8 @@ query GetMessages($roomCode:ID!){
       photoUri
     }
   createdAt
-    payload
+  payload
+  actionType
 }
   }
 }
