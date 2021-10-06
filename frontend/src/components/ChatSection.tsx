@@ -1,17 +1,14 @@
 import MessageAlert from "./MessagAlert";
 import MessageBox from "./MessageBox";
 import { useQuery, gql, useSubscription } from "@apollo/client";
-import { useContext, useEffect } from "react";
-import { FirebaseContext } from "../context/firebaseContext";
+import { useEffect } from "react";
 import { GET_MESSAGES_QUERY } from "../graphql/queries";
 import {
   GetMessages,
   GetMessagesVariables,
-  SubscribeToAction,
-  SubscribeToActionVariables,
   SubscribeToAction_messages,
 } from "../types/api";
-import { useParams } from "react-router";
+import { useHistory, useParams } from "react-router";
 import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
 
 interface ChatSectionProps {
@@ -27,6 +24,13 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
     variables: { roomCode },
   });
 
+  const history = useHistory();
+
+  //Do not load the chat if the room does not exist
+  if (error) {
+    history.push("/");
+  }
+
   const subscribeToMessages = () =>
     subscribeToMore({
       document: SUBSCRIBE_TO_ACTION,
@@ -36,7 +40,6 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
         const newMessage =
           subscriptionData.data as unknown as SubscribeToAction_messages; //Very hacky implementation. Apollo and typescript really don't go together with regards to subscriptions ;__;
 
-        console.log(newMessage);
         return Object.assign({}, prev, {
           room: { actions: [newMessage, ...(prev.room?.actions ?? [])] },
         });
@@ -44,11 +47,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
     });
 
   useEffect(() => {
-    const subs = subscribeToMessages();
-
-    return () => {
-      subs();
-    };
+    subscribeToMessages();
   }, []);
 
   return (
@@ -84,17 +83,19 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
         <p>Room Code {roomCode}</p>{" "}
         <button className="inline-block">Copy</button>
       </div>
-      <div className="max-h-96 p-2 overflow-scroll">
-        <ul className="space-y-2 flex flex-col">
-          {loading && "loading"}
-          {error && String(error)}
-          {data?.room?.actions.map((action) => (
-            <MessageAlert
-              payload={action.payload}
-              createdBy={action.createdBy.name}
-            />
-          ))}
-        </ul>
+      <div className="overflow-auto flex max-h-96 flex-col-reverse">
+        <div className="p-2">
+          <ul className="space-y-2 flex flex-col">
+            {loading && "loading..."}
+            {data?.room?.actions.map((action) => (
+              <MessageAlert
+                payload={action.payload}
+                createdBy={action.createdBy}
+                createdAt={action.createdAt}
+              />
+            ))}
+          </ul>
+        </div>
       </div>
       <MessageBox />
     </div>
