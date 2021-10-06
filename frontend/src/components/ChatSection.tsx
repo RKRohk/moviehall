@@ -89,6 +89,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
             {loading && "loading..."}
             {data?.room?.actions.map((action) => (
               <MessageAlert
+                key={action.payload + action.createdBy.id}
                 payload={action.payload}
                 createdBy={action.createdBy}
                 createdAt={action.createdAt}
