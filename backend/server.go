@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -51,12 +52,17 @@ func main() {
 
 	router := chi.NewRouter()
 	if auth == nil {
-		log.Fatal("Auth is nil")
+		log.Fatal("Auth is nil") // Die if you can't get authentication running
 	}
 	router.Use(utils.Middleware(auth))
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", srv)
+
+	workDir, _ := os.Getwd()
+	videosDirectory := http.Dir(filepath.Join(workDir, "/videos"))
+
+	router.Get("/videos", utils.FileServer(videosDirectory))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))

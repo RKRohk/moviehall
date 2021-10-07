@@ -16,3 +16,11 @@ query GetMessages($roomCode:ID!){
   }
 }
 `
+
+export const GET_TIMESTAMP_QUERY = gql`
+query GetTimeStamp($roomCode:ID!) {
+  room(code:$roomCode){
+    timestamp
+  }
+}
+`

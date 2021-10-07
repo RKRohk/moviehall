@@ -1,10 +1,7 @@
 import { Transition } from "@headlessui/react";
 import { Fragment, useContext } from "react";
 import { FirebaseContext } from "../context/firebaseContext";
-import {
-  GetMessages_room_actions,
-  GetMessages_room_actions_createdBy,
-} from "../types/api";
+import { GetMessages_room_actions_createdBy } from "../types/api";
 
 interface MessageAlertProps {
   createdBy: GetMessages_room_actions_createdBy;
@@ -19,7 +16,7 @@ const MessageAlert: React.VFC<MessageAlertProps> = ({
   const { auth } = useContext(FirebaseContext);
   const myUserId = auth.currentUser?.uid;
 
-  const amIAuthor = createdBy.id === auth.currentUser?.uid;
+  const amIAuthor = createdBy.id === myUserId;
 
   const createdAtTime = new Date(createdAt);
 
@@ -27,9 +24,13 @@ const MessageAlert: React.VFC<MessageAlertProps> = ({
     <Transition
       as={Fragment}
       appear={true}
-      enter="translate transform duration-300 ease-in-out"
-      enterFrom={amIAuthor ? "translate-x-full" : "-translate-x-full"}
-      enterTo="translate-x-0"
+      enter="translate transform duration-500 z-50 ease-in-out"
+      enterFrom={
+        amIAuthor
+          ? "-translate-x-full translate-y-full bg-gray-500"
+          : "translate-y-full"
+      }
+      enterTo="translate-x-0 translate-y-0 "
     >
       <li
         className={`${

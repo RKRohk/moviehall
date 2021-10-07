@@ -1,5 +1,7 @@
 //@ts-ignore
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useSubscription } from "@apollo/client";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
+import YouTube from "react-youtube";
 // import ShakaPlayer from "shaka-player-react";
 import "shaka-player/dist/controls.css";
 
@@ -8,19 +10,8 @@ interface VideoPlayerProps {
 }
 const VideoPlayer = () => {
   // return <ShakaPlayer />
-  const ref = useRef<HTMLIFrameElement>(null);
 
-  return (
-    <iframe
-      src="https://drive.google.com/file/d/1_A-GlpwOTSBZIQvNEaFVJm3jbL8nfEgo/preview?enablejsapi=1"
-      allow="autoplay"
-      className="h-screen w-full py-5"
-      ref={ref}
-      onPause={(e) => {
-        console.log("PAUSED");
-      }}
-    ></iframe>
-  );
+  return <video src="" />;
 };
 
 export default VideoPlayer;

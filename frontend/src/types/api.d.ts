@@ -27,6 +27,28 @@ export interface sendMessageVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL mutation operation: createRoom
+// ====================================================
+
+export interface createRoom_createRoom {
+  __typename: "Room";
+  code: string;
+}
+
+export interface createRoom {
+  createRoom: createRoom_createRoom;
+}
+
+export interface createRoomVariables {
+  uri: string;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL query operation: GetMessages
 // ====================================================
 
@@ -55,6 +77,28 @@ export interface GetMessages {
 }
 
 export interface GetMessagesVariables {
+  roomCode: string;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
+// GraphQL query operation: GetTimeStamp
+// ====================================================
+
+export interface GetTimeStamp_room {
+  __typename: "Room";
+  timestamp: number;
+}
+
+export interface GetTimeStamp {
+  room: GetTimeStamp_room | null;
+}
+
+export interface GetTimeStampVariables {
   roomCode: string;
 }
 

@@ -6,3 +6,11 @@ export const SEND_MESSAGE_MUTATION = gql`
         }
     }
 `
+
+export const CREATE_ROOM_MUTATION = gql`
+    mutation createRoom($uri:String!){
+        createRoom(uri:{uri:$uri}) {
+            code
+        }
+    }
+`
