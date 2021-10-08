@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"strconv"
 	"sync"
@@ -44,16 +43,16 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	HasRole  func(ctx context.Context, obj interface{}, next graphql.Resolver, role model.Role) (res interface{}, err error)
-	UserName func(ctx context.Context, obj interface{}, next graphql.Resolver, username string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
 	Action struct {
-		ActionType func(childComplexity int) int
-		CreatedAt  func(childComplexity int) int
-		CreatedBy  func(childComplexity int) int
-		Payload    func(childComplexity int) int
+		ActionTimeStamp func(childComplexity int) int
+		ActionType      func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		CreatedBy       func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Payload         func(childComplexity int) int
 	}
 
 	Media struct {
@@ -78,8 +77,10 @@ type ComplexityRoot struct {
 	Room struct {
 		Actions   func(childComplexity int) int
 		Code      func(childComplexity int) int
+		ID        func(childComplexity int) int
 		Media     func(childComplexity int) int
 		Members   func(childComplexity int) int
+		Owner     func(childComplexity int) int
 		Timestamp func(childComplexity int) int
 	}
 
@@ -127,6 +128,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "Action.actionTimeStamp":
+		if e.complexity.Action.ActionTimeStamp == nil {
+			break
+		}
+
+		return e.complexity.Action.ActionTimeStamp(childComplexity), true
+
 	case "Action.actionType":
 		if e.complexity.Action.ActionType == nil {
 			break
@@ -147,6 +155,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Action.CreatedBy(childComplexity), true
+
+	case "Action.id":
+		if e.complexity.Action.ID == nil {
+			break
+		}
+
+		return e.complexity.Action.ID(childComplexity), true
 
 	case "Action.payload":
 		if e.complexity.Action.Payload == nil {
@@ -274,6 +289,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Room.Code(childComplexity), true
 
+	case "Room.id":
+		if e.complexity.Room.ID == nil {
+			break
+		}
+
+		return e.complexity.Room.ID(childComplexity), true
+
 	case "Room.media":
 		if e.complexity.Room.Media == nil {
 			break
@@ -287,6 +309,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Room.Members(childComplexity), true
+
+	case "Room.owner":
+		if e.complexity.Room.Owner == nil {
+			break
+		}
+
+		return e.complexity.Room.Owner(childComplexity), true
 
 	case "Room.timestamp":
 		if e.complexity.Room.Timestamp == nil {
@@ -379,9 +408,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 		}
 	case ast.Subscription:
-		next := ec._subscriptionMiddleware(ctx, rc.Operation, func(ctx context.Context) (interface{}, error) {
-			return ec._Subscription(ctx, rc.Operation.SelectionSet), nil
-		})
+		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
 
 		var buf bytes.Buffer
 		return func(ctx context.Context) *graphql.Response {
@@ -423,11 +450,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "graph/schema.graphqls", Input: `
-scalar Time
-
-directive @hasRole(role: Role!) on FIELD_DEFINITION
-directive @userName(username: String!) on SUBSCRIPTION
+	{Name: "graph/schema.graphqls", Input: `scalar Time
 
 enum Role {
   ADMIN
@@ -435,11 +458,13 @@ enum Role {
 }
 
 type Room {
+  id: ID!
   code: ID!
   media: Media!
   actions: [Action!]!
   members: [User!]!
   timestamp: Int!
+  owner: User!
 }
 
 type Media {
@@ -448,18 +473,20 @@ type Media {
 }
 
 type Action {
+  id: ID!
   createdBy: User!
   createdAt: Time!
   payload: String!
   actionType: ActionType!
+  actionTimeStamp: Int
 }
 
 enum ActionType {
-  MESSAGE,
-  TYPING,
-  PAUSE,
-  PLAY,
-  SEEK,
+  MESSAGE
+  TYPING
+  PAUSE
+  PLAY
+  SEEK
   UPDATE
 }
 
@@ -470,66 +497,34 @@ type User {
 }
 
 type Query {
-  media:[Media!]!
-  room(code:ID!): Room
+  media: [Media!]!
+  room(code: ID!): Room
 }
 
 input MediaInput {
   uri: String!
 }
 
-
-
-
 type Mutation {
-  createRoom(uri:MediaInput!): Room!
-  sendMessage(roomCode: String!,message: String!): Action!
-  pause(roomCode: String!): Boolean @hasRole(role: ADMIN)
-  play(roomCode: String!): Boolean @hasRole(role: ADMIN)
-  seek(roomCode: String!, timeStamp: Int!): Boolean @hasRole(role: ADMIN)
-  update(roomCode: String!, timeStamp: Int!): Boolean @hasRole(role: ADMIN)
+  createRoom(uri: MediaInput!): Room!
+  sendMessage(roomCode: String!, message: String!): Action!
+  pause(roomCode: String!): Boolean
+  play(roomCode: String!): Boolean
+  seek(roomCode: String!, timeStamp: Int!): Boolean
+  update(roomCode: String!, timeStamp: Int!): Boolean
 }
 
 type Subscription {
   messages(roomCode: String!): Action!
   timeupdate(roomCode: String!): Int!
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) dir_hasRole_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.Role
-	if tmp, ok := rawArgs["role"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
-		arg0, err = ec.unmarshalNRole2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRole(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["role"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) dir_userName_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["username"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["username"] = arg0
-	return args, nil
-}
 
 func (ec *executionContext) field_Mutation_createRoom_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -742,46 +737,44 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    ************************** directives.gotpl **************************
 
-func (ec *executionContext) _subscriptionMiddleware(ctx context.Context, obj *ast.OperationDefinition, next func(ctx context.Context) (interface{}, error)) func() graphql.Marshaler {
-	for _, d := range obj.Directives {
-		switch d.Name {
-		case "userName":
-			rawArgs := d.ArgumentMap(ec.Variables)
-			args, err := ec.dir_userName_args(ctx, rawArgs)
-			if err != nil {
-				ec.Error(ctx, err)
-				return func() graphql.Marshaler {
-					return graphql.Null
-				}
-			}
-			n := next
-			next = func(ctx context.Context) (interface{}, error) {
-				if ec.directives.UserName == nil {
-					return nil, errors.New("directive userName is not implemented")
-				}
-				return ec.directives.UserName(ctx, obj, n, args["username"].(string))
-			}
-		}
-	}
-	tmp, err := next(ctx)
-	if err != nil {
-		ec.Error(ctx, err)
-		return func() graphql.Marshaler {
-			return graphql.Null
-		}
-	}
-	if data, ok := tmp.(func() graphql.Marshaler); ok {
-		return data
-	}
-	ec.Errorf(ctx, `unexpected type %T from directive, should be graphql.Marshaler`, tmp)
-	return func() graphql.Marshaler {
-		return graphql.Null
-	}
-}
-
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Action_id(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Action",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _Action_createdBy(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
 	defer func() {
@@ -921,6 +914,38 @@ func (ec *executionContext) _Action_actionType(ctx context.Context, field graphq
 	res := resTmp.(model.ActionType)
 	fc.Result = res
 	return ec.marshalNActionType2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐActionType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Action_actionTimeStamp(ctx context.Context, field graphql.CollectedField, obj *model.Action) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Action",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ActionTimeStamp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Media_uri(ctx context.Context, field graphql.CollectedField, obj *model.Media) (ret graphql.Marshaler) {
@@ -1098,32 +1123,8 @@ func (ec *executionContext) _Mutation_pause(ctx context.Context, field graphql.C
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().Pause(rctx, args["roomCode"].(string))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			role, err := ec.unmarshalNRole2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRole(ctx, "ADMIN")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.HasRole == nil {
-				return nil, errors.New("directive hasRole is not implemented")
-			}
-			return ec.directives.HasRole(ctx, nil, directive0, role)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Pause(rctx, args["roomCode"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1161,32 +1162,8 @@ func (ec *executionContext) _Mutation_play(ctx context.Context, field graphql.Co
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().Play(rctx, args["roomCode"].(string))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			role, err := ec.unmarshalNRole2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRole(ctx, "ADMIN")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.HasRole == nil {
-				return nil, errors.New("directive hasRole is not implemented")
-			}
-			return ec.directives.HasRole(ctx, nil, directive0, role)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Play(rctx, args["roomCode"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1224,32 +1201,8 @@ func (ec *executionContext) _Mutation_seek(ctx context.Context, field graphql.Co
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().Seek(rctx, args["roomCode"].(string), args["timeStamp"].(int))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			role, err := ec.unmarshalNRole2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRole(ctx, "ADMIN")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.HasRole == nil {
-				return nil, errors.New("directive hasRole is not implemented")
-			}
-			return ec.directives.HasRole(ctx, nil, directive0, role)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Seek(rctx, args["roomCode"].(string), args["timeStamp"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1287,32 +1240,8 @@ func (ec *executionContext) _Mutation_update(ctx context.Context, field graphql.
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().Update(rctx, args["roomCode"].(string), args["timeStamp"].(int))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			role, err := ec.unmarshalNRole2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRole(ctx, "ADMIN")
-			if err != nil {
-				return nil, err
-			}
-			if ec.directives.HasRole == nil {
-				return nil, errors.New("directive hasRole is not implemented")
-			}
-			return ec.directives.HasRole(ctx, nil, directive0, role)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*bool); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *bool`, tmp)
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Update(rctx, args["roomCode"].(string), args["timeStamp"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1469,6 +1398,41 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Room_id(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Room",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Room_code(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
@@ -1644,6 +1608,41 @@ func (ec *executionContext) _Room_timestamp(ctx context.Context, field graphql.C
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Room_owner(ctx context.Context, field graphql.CollectedField, obj *model.Room) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Room",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owner, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Subscription_messages(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
@@ -3019,6 +3018,11 @@ func (ec *executionContext) _Action(ctx context.Context, sel ast.SelectionSet, o
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Action")
+		case "id":
+			out.Values[i] = ec._Action_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createdBy":
 			out.Values[i] = ec._Action_createdBy(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3039,6 +3043,8 @@ func (ec *executionContext) _Action(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "actionTimeStamp":
+			out.Values[i] = ec._Action_actionTimeStamp(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3189,6 +3195,11 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Room")
+		case "id":
+			out.Values[i] = ec._Room_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "code":
 			out.Values[i] = ec._Room_code(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3211,6 +3222,11 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "timestamp":
 			out.Values[i] = ec._Room_timestamp(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "owner":
+			out.Values[i] = ec._Room_owner(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3706,16 +3722,6 @@ func (ec *executionContext) unmarshalNMediaInput2githubᚗcomᚋrkrohkᚋmovieha
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNRole2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRole(ctx context.Context, v interface{}) (model.Role, error) {
-	var res model.Role
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNRole2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRole(ctx context.Context, sel ast.SelectionSet, v model.Role) graphql.Marshaler {
-	return v
-}
-
 func (ec *executionContext) marshalNRoom2githubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRoom(ctx context.Context, sel ast.SelectionSet, v model.Room) graphql.Marshaler {
 	return ec._Room(ctx, sel, &v)
 }
@@ -4093,6 +4099,21 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*v)
 }
 
 func (ec *executionContext) marshalORoom2ᚖgithubᚗcomᚋrkrohkᚋmoviehallᚋgraphᚋmodelᚐRoom(ctx context.Context, sel ast.SelectionSet, v *model.Room) graphql.Marshaler {

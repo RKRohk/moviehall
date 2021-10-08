@@ -14,7 +14,6 @@ import (
 )
 
 func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput) (*model.Room, error) {
-
 	r.mu.Lock()
 
 	defer r.mu.Unlock()
@@ -27,10 +26,13 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput)
 
 	roomCode := utils.RandomString(8)
 	newRoom := &model.Room{
+		ID:                 roomCode,
 		Code:               roomCode,
 		Media:              &model.Media{URI: uri.URI},
 		MessageObservers:   make(map[string]struct{ Action chan *model.Action }),
+		Timestamp:          0,
 		TimeStampObservers: map[string]struct{ Timestamp chan int }{},
+		Owner:              user,
 	}
 	r.Rooms[roomCode] = newRoom
 
@@ -59,6 +61,7 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 	}
 
 	newMessage := &model.Action{
+		ID:         utils.RandomString(16),
 		CreatedBy:  user,
 		CreatedAt:  time.Now(),
 		Payload:    message,
@@ -76,15 +79,124 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 }
 
 func (r *mutationResolver) Pause(ctx context.Context, roomCode string) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	r.mu.Lock()
+
+	defer r.mu.Unlock()
+
+	room := r.Rooms[roomCode]
+
+	if room == nil {
+		return nil, fmt.Errorf("Room %s does not exist", roomCode)
+	}
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
+	if user.ID != room.Owner.ID {
+		return nil, fmt.Errorf("user is not room owner")
+	}
+
+	newAction := &model.Action{
+		ID:         utils.RandomString(10),
+		CreatedBy:  user,
+		CreatedAt:  time.Now(),
+		Payload:    fmt.Sprintf("%s paused the video", user.Name),
+		ActionType: model.ActionTypePause,
+	}
+
+	room.Actions = append(room.Actions, newAction)
+
+	//Sending the new pause action to every user in the room
+	for _, observer := range room.MessageObservers {
+		observer.Action <- newAction
+	}
+
+	//TODO URGENT! FIX THIS RETURN TYPE ISSUE IT IS A MEMORY LEAK!!!
+	return &ret, nil
 }
 
 func (r *mutationResolver) Play(ctx context.Context, roomCode string) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	r.mu.Lock()
+
+	defer r.mu.Unlock()
+
+	room := r.Rooms[roomCode]
+
+	if room == nil {
+		return nil, fmt.Errorf("Room %s does not exist", roomCode)
+	}
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
+	if user.ID != room.Owner.ID {
+		return nil, fmt.Errorf("user is not room owner")
+	}
+
+	newAction := &model.Action{
+		ID:         utils.RandomString(10),
+		CreatedBy:  user,
+		CreatedAt:  time.Now(),
+		Payload:    fmt.Sprintf("%s played the video", user.Name),
+		ActionType: model.ActionTypePlay,
+	}
+
+	room.Actions = append(room.Actions, newAction)
+
+	//Sending the new pause action to every user in the room
+	for _, observer := range room.MessageObservers {
+		observer.Action <- newAction
+	}
+
+	//TODO URGENT! FIX THIS RETURN TYPE ISSUE IT IS A MEMORY LEAK!!!
+	return &ret, nil
 }
 
 func (r *mutationResolver) Seek(ctx context.Context, roomCode string, timeStamp int) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	r.mu.Lock()
+
+	defer r.mu.Unlock()
+
+	room := r.Rooms[roomCode]
+
+	if room == nil {
+		return nil, fmt.Errorf("Room %s does not exist", roomCode)
+	}
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
+	if user.ID != room.Owner.ID {
+		return nil, fmt.Errorf("user is not room owner")
+	}
+
+	newAction := &model.Action{
+		ID:              utils.RandomString(10),
+		CreatedBy:       user,
+		CreatedAt:       time.Now(),
+		Payload:         fmt.Sprintf("%s seeked the video", user.Name),
+		ActionType:      model.ActionTypeSeek,
+		ActionTimeStamp: &timeStamp,
+	}
+
+	room.Actions = append(room.Actions, newAction)
+
+	//Sending the new pause action to every user in the room
+	for _, observer := range room.MessageObservers {
+		observer.Action <- newAction
+	}
+
+	//TODO URGENT! FIX THIS RETURN TYPE ISSUE IT IS A MEMORY LEAK!!!
+	return &ret, nil
 }
 
 func (r *mutationResolver) Update(ctx context.Context, roomCode string, timeStamp int) (*bool, error) {
@@ -149,3 +261,11 @@ func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subsc
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+var ret bool = true

@@ -38,6 +38,8 @@ func main() {
 	//For graphql as graphql uses POST
 	srv.AddTransport(transport.POST{})
 
+	srv.AddTransport(transport.GET{})
+
 	srv.AddTransport(transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
 		// InitFunc:              utils.WsAuthMiddleware(auth),
@@ -62,7 +64,7 @@ func main() {
 	workDir, _ := os.Getwd()
 	videosDirectory := http.Dir(filepath.Join(workDir, "/videos"))
 
-	router.Get("/videos", utils.FileServer(videosDirectory))
+	router.Get("/videos/*", utils.FileServer(videosDirectory))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))

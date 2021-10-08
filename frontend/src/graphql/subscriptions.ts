@@ -2,6 +2,7 @@ import {gql} from '@apollo/client'
 export const SUBSCRIBE_TO_ACTION = gql`
 subscription SubscribeToAction($roomCode:String!){
   messages(roomCode:$roomCode) {
+    id
     payload
     createdBy{
       id
@@ -10,6 +11,13 @@ subscription SubscribeToAction($roomCode:String!){
     }
     createdAt
     actionType
+    actionTimeStamp
   }
 }
+`
+
+export const SUBSCRIBE_TO_TIMESTAMP = gql`
+  subscription TimeStampSubscription($roomCode:String!){
+    timeupdate(roomCode:$roomCode)
+  }
 `

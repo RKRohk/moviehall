@@ -1,8 +1,4 @@
-
 scalar Time
-
-directive @hasRole(role: Role!) on FIELD_DEFINITION
-directive @userName(username: String!) on SUBSCRIPTION
 
 enum Role {
   ADMIN
@@ -10,11 +6,13 @@ enum Role {
 }
 
 type Room {
+  id: ID!
   code: ID!
   media: Media!
   actions: [Action!]!
   members: [User!]!
   timestamp: Int!
+  owner: User!
 }
 
 type Media {
@@ -23,18 +21,20 @@ type Media {
 }
 
 type Action {
+  id: ID!
   createdBy: User!
   createdAt: Time!
   payload: String!
   actionType: ActionType!
+  actionTimeStamp: Int
 }
 
 enum ActionType {
-  MESSAGE,
-  TYPING,
-  PAUSE,
-  PLAY,
-  SEEK,
+  MESSAGE
+  TYPING
+  PAUSE
+  PLAY
+  SEEK
   UPDATE
 }
 
@@ -45,24 +45,21 @@ type User {
 }
 
 type Query {
-  media:[Media!]!
-  room(code:ID!): Room
+  media: [Media!]!
+  room(code: ID!): Room
 }
 
 input MediaInput {
   uri: String!
 }
 
-
-
-
 type Mutation {
-  createRoom(uri:MediaInput!): Room!
-  sendMessage(roomCode: String!,message: String!): Action!
-  pause(roomCode: String!): Boolean @hasRole(role: ADMIN)
-  play(roomCode: String!): Boolean @hasRole(role: ADMIN)
-  seek(roomCode: String!, timeStamp: Int!): Boolean @hasRole(role: ADMIN)
-  update(roomCode: String!, timeStamp: Int!): Boolean @hasRole(role: ADMIN)
+  createRoom(uri: MediaInput!): Room!
+  sendMessage(roomCode: String!, message: String!): Action!
+  pause(roomCode: String!): Boolean
+  play(roomCode: String!): Boolean
+  seek(roomCode: String!, timeStamp: Int!): Boolean
+  update(roomCode: String!, timeStamp: Int!): Boolean
 }
 
 type Subscription {

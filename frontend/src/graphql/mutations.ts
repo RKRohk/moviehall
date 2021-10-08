@@ -14,3 +14,21 @@ export const CREATE_ROOM_MUTATION = gql`
         }
     }
 `
+
+export const PAUSE_MUTATION = gql`
+    mutation pause($roomCode:String!) {
+        pause(roomCode:$roomCode)
+    }
+`
+
+export const PLAY_MUTATION = gql`
+    mutation play($roomCode:String!) {
+        play(roomCode:$roomCode)
+    }
+`
+
+export const SEEK_MUTATION = gql`
+    mutation seek($roomCode:String!,$timeStamp:Int!) {
+        seek(roomCode:$roomCode,timeStamp:$timeStamp)
+    }
+`

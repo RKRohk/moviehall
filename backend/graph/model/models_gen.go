@@ -10,10 +10,12 @@ import (
 )
 
 type Action struct {
-	CreatedBy  *User      `json:"createdBy"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	Payload    string     `json:"payload"`
-	ActionType ActionType `json:"actionType"`
+	ID              string     `json:"id"`
+	CreatedBy       *User      `json:"createdBy"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	Payload         string     `json:"payload"`
+	ActionType      ActionType `json:"actionType"`
+	ActionTimeStamp *int       `json:"actionTimeStamp"`
 }
 
 type Media struct {

@@ -1,5 +1,6 @@
 import { Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
+import { useParams } from "react-router";
 import ChatSection from "../components/ChatSection";
 import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
@@ -7,13 +8,15 @@ import VideoPlayer from "../components/VideoPlayer";
 const MovieHall = () => {
   const [chatVisibility, setChatVisibility] = useState(false);
 
+  const { roomCode } = useParams<{ roomCode: string }>();
+
   const toggleVisibility = () => setChatVisibility(!chatVisibility);
 
   return (
     <div className="relative text-gray-200">
       <div className="w-full h-screen flex">
         <div className="w-full my-auto">
-          <VideoPlayer />
+          <VideoPlayer uri="" roomCode={roomCode} />
         </div>
       </div>
       <Transition
@@ -26,7 +29,7 @@ const MovieHall = () => {
         leaveTo="translate-x-full"
       >
         <div className="absolute z-10 bottom-36 right-10">
-          <ChatSection onClose={toggleVisibility} />
+          <ChatSection onClose={toggleVisibility} roomCode={roomCode} />
         </div>
       </Transition>
       <Transition

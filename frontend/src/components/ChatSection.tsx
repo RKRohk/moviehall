@@ -6,6 +6,7 @@ import { GET_MESSAGES_QUERY } from "../graphql/queries";
 import {
   GetMessages,
   GetMessagesVariables,
+  SubscribeToAction,
   SubscribeToAction_messages,
 } from "../types/api";
 import { useHistory, useParams } from "react-router";
@@ -13,10 +14,9 @@ import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
 
 interface ChatSectionProps {
   onClose: () => void;
+  roomCode: string;
 }
-const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
-  const { roomCode } = useParams<{ roomCode: string }>();
-
+const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
   const { data, loading, error, subscribeToMore } = useQuery<
     GetMessages,
     GetMessagesVariables
@@ -32,16 +32,15 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
   }
 
   const subscribeToMessages = () =>
-    subscribeToMore({
+    subscribeToMore<SubscribeToAction>({
       document: SUBSCRIBE_TO_ACTION,
       variables: { roomCode: roomCode },
       updateQuery: (prev, { subscriptionData }) => {
         if (!subscriptionData.data) return prev;
-        const newMessage =
-          subscriptionData.data as unknown as SubscribeToAction_messages; //Very hacky implementation. Apollo and typescript really don't go together with regards to subscriptions ;__;
-
+        const newMessage = subscriptionData.data;
+        console.log(subscriptionData.data);
         return Object.assign({}, prev, {
-          room: { actions: [newMessage, ...(prev.room?.actions ?? [])] },
+          room: { actions: [newMessage.messages] },
         });
       },
     });
@@ -89,7 +88,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose }) => {
             {loading && "loading..."}
             {data?.room?.actions.map((action) => (
               <MessageAlert
-                key={action.payload + action.createdBy.id}
+                key={action.payload + action.createdBy.id + action.id}
                 payload={action.payload}
                 createdBy={action.createdBy}
                 createdAt={action.createdAt}
