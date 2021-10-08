@@ -1,21 +1,41 @@
 import MessageAlert from "./MessagAlert";
 import MessageBox from "./MessageBox";
 import { useQuery, gql, useSubscription } from "@apollo/client";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { GET_MESSAGES_QUERY } from "../graphql/queries";
 import {
+  ActionType,
   GetMessages,
   GetMessagesVariables,
+  GetMessages_room_actions,
   SubscribeToAction,
-  SubscribeToAction_messages,
 } from "../types/api";
 import { useHistory, useParams } from "react-router";
 import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
+import ActionText from "./ActionText";
 
 interface ChatSectionProps {
   onClose: () => void;
   roomCode: string;
 }
+
+const actionMapper = (action: GetMessages_room_actions) => {
+  switch (action.actionType) {
+    case ActionType.MESSAGE:
+      return (
+        <MessageAlert
+          key={action.payload + action.createdBy.id + action.id}
+          payload={action.payload}
+          createdBy={action.createdBy}
+          createdAt={action.createdAt}
+        />
+      );
+    case ActionType.PAUSE:
+    case ActionType.PLAY:
+    case ActionType.SEEK:
+      return <ActionText action={action} />;
+  }
+};
 const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
   const { data, loading, error, subscribeToMore } = useQuery<
     GetMessages,
@@ -86,14 +106,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
         <div className="p-2">
           <ul className="space-y-2 flex flex-col">
             {loading && "loading..."}
-            {data?.room?.actions.map((action) => (
-              <MessageAlert
-                key={action.payload + action.createdBy.id + action.id}
-                payload={action.payload}
-                createdBy={action.createdBy}
-                createdAt={action.createdAt}
-              />
-            ))}
+            {data?.room?.actions.map(actionMapper)}
           </ul>
         </div>
       </div>
