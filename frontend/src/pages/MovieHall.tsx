@@ -1,9 +1,12 @@
+import { useQuery } from "@apollo/client";
 import { Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
-import { useParams } from "react-router";
+import { useHistory, useParams } from "react-router";
 import ChatSection from "../components/ChatSection";
 import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
+import { URL_QUERY } from "../graphql/queries";
+import { MediaUrl, MediaUrlVariables } from "../types/api";
 
 const MovieHall = () => {
   const [chatVisibility, setChatVisibility] = useState(false);
@@ -12,11 +15,26 @@ const MovieHall = () => {
 
   const toggleVisibility = () => setChatVisibility(!chatVisibility);
 
+  const { data, error } = useQuery<MediaUrl, MediaUrlVariables>(URL_QUERY, {
+    variables: { roomCode },
+  });
+
+  const history = useHistory();
+
+  if (error) {
+    console.error(error);
+    history.push("/");
+  }
+
   return (
-    <div className="relative text-gray-200">
+    <div className="relative bg-black text-gray-200">
       <div className="w-full h-screen flex">
         <div className="w-full my-auto">
-          <VideoPlayer uri="" roomCode={roomCode} />
+          <VideoPlayer
+            uri={data?.room?.media.uri ?? ""}
+            roomCode={roomCode}
+            startTime={data?.room?.timestamp ?? 0}
+          />
         </div>
       </div>
       <Transition

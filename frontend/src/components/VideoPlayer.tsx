@@ -1,7 +1,6 @@
 //@ts-ignore
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import React, { useContext, useEffect, useLayoutEffect, useRef } from "react";
-import YouTube from "react-youtube";
 
 //@ts-ignore
 import ShakaPlayer from "shaka-player-react";
@@ -11,6 +10,7 @@ import {
   PAUSE_MUTATION,
   PLAY_MUTATION,
   SEEK_MUTATION,
+  UPDATE_TIMESTAMP,
 } from "../graphql/mutations";
 import { GET_OWNER_QUERY } from "../graphql/queries";
 import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
@@ -26,6 +26,8 @@ import {
   seekVariables,
   SubscribeToAction,
   SubscribeToActionVariables,
+  update,
+  updateVariables,
 } from "../types/api";
 
 const isVideoElement = (element: unknown): element is HTMLVideoElement => {
@@ -35,8 +37,13 @@ const isVideoElement = (element: unknown): element is HTMLVideoElement => {
 interface VideoPlayerProps {
   uri: string;
   roomCode: string;
+  startTime: number;
 }
-const VideoPlayer: React.VFC<VideoPlayerProps> = ({ uri, roomCode }) => {
+const VideoPlayer: React.VFC<VideoPlayerProps> = ({
+  uri,
+  roomCode,
+  startTime,
+}) => {
   const { auth } = useContext(FirebaseContext);
 
   const myUserId = auth.currentUser?.uid;
@@ -57,6 +64,8 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({ uri, roomCode }) => {
   });
 
   const [seek] = useMutation<seek, seekVariables>(SEEK_MUTATION);
+
+  const [update] = useMutation<update, updateVariables>(UPDATE_TIMESTAMP);
 
   const amIOwner = myUserId === data?.room?.owner.id;
 
@@ -88,9 +97,18 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({ uri, roomCode }) => {
 
   useLayoutEffect(() => {
     const { videoElement } = ref.current as any;
+    let cancelFn: NodeJS.Timeout | null = null;
     if (isVideoElement(videoElement)) {
       const element = videoElement;
-      element.volume = 0;
+
+      //set start time
+      element.currentTime = startTime;
+
+      if (element.currentTime) {
+        element.play();
+      }
+
+      //Add event listeners if owner
       if (myUserId === data?.room?.owner.id) {
         element.addEventListener("pause", (e) => {
           pause();
@@ -110,7 +128,7 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({ uri, roomCode }) => {
     }
   }, [ref.current]);
 
-  return <ShakaPlayer ref={ref} src="/videos/FreeGuy_720p.mp4" />;
+  return <ShakaPlayer ref={ref} src={uri} />;
 };
 
 export default VideoPlayer;

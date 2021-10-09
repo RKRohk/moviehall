@@ -200,7 +200,33 @@ func (r *mutationResolver) Seek(ctx context.Context, roomCode string, timeStamp 
 }
 
 func (r *mutationResolver) Update(ctx context.Context, roomCode string, timeStamp int) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	room := r.Rooms[roomCode]
+
+	if room == nil {
+		return nil, fmt.Errorf("roomcode %s not found", roomCode)
+	}
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
+	//Also check if user is admin, //TODO later
+
+	room.Timestamp = timeStamp
+
+	//update the time on subscribers
+	for _, observer := range room.TimeStampObservers {
+		observer.Timestamp <- timeStamp
+	}
+
+	return &ret, nil
+
 }
 
 func (r *queryResolver) Media(ctx context.Context) ([]*model.Media, error) {
@@ -246,7 +272,30 @@ func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<
 }
 
 func (r *subscriptionResolver) Timeupdate(ctx context.Context, roomCode string) (<-chan int, error) {
-	panic(fmt.Errorf("not implemented"))
+	room := r.Rooms[roomCode]
+
+	if room == nil {
+		return nil, fmt.Errorf("roomcode %s does not exist", roomCode)
+	}
+
+	//Start using Firebase Token ID or something later
+	userID := utils.RandomString(10)
+
+	timestamp := make(chan int, 1)
+	room.TimeStampObservers[userID] = struct {
+		Timestamp chan int
+	}{
+		Timestamp: make(chan int),
+	}
+
+	go func() {
+		<-ctx.Done()
+		r.mu.Lock()
+		delete(room.TimeStampObservers, userID)
+		r.mu.Unlock()
+	}()
+
+	return timestamp, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
@@ -262,10 +311,4 @@ type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
 var ret bool = true

@@ -101,6 +101,24 @@ export interface seekVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL mutation operation: update
+// ====================================================
+
+export interface update {
+  update: boolean | null;
+}
+
+export interface updateVariables {
+  roomCode: string;
+  timeStamp: number;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL query operation: GetMessages
 // ====================================================
 
@@ -182,6 +200,34 @@ export interface GetOwner {
 }
 
 export interface GetOwnerVariables {
+  roomCode: string;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
+// GraphQL query operation: MediaUrl
+// ====================================================
+
+export interface MediaUrl_room_media {
+  __typename: "Media";
+  uri: string;
+}
+
+export interface MediaUrl_room {
+  __typename: "Room";
+  timestamp: number;
+  media: MediaUrl_room_media;
+}
+
+export interface MediaUrl {
+  room: MediaUrl_room | null;
+}
+
+export interface MediaUrlVariables {
   roomCode: string;
 }
 

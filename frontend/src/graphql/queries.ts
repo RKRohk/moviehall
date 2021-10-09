@@ -38,3 +38,15 @@ query GetOwner($roomCode:ID!) {
   }
 } 
 `
+
+
+export const URL_QUERY = gql`
+  query MediaUrl($roomCode:ID!){
+    room(code:$roomCode){
+      timestamp
+      media{
+        uri
+      }
+    }
+  }
+`

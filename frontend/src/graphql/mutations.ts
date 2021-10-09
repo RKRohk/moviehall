@@ -32,3 +32,9 @@ export const SEEK_MUTATION = gql`
         seek(roomCode:$roomCode,timeStamp:$timeStamp)
     }
 `
+
+export const UPDATE_TIMESTAMP = gql`
+    mutation update($roomCode:String!,$timeStamp:Int!){
+        update(roomCode:$roomCode,timeStamp:$timeStamp)
+    }
+`

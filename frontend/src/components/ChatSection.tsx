@@ -79,7 +79,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
           onClose();
         }
       }}
-      className="h-full w-96 rounded-2xl p-2 pb-4 bg-gray-800 text-gray-300"
+      className="h-full w-96 rounded-2xl p-2 pb-4 bg-black border-green-900 border text-gray-300 shadow-lg"
     >
       <button onClick={onClose} className="float-right pr-3">
         <svg
