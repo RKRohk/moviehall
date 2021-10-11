@@ -97,11 +97,12 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({
 
   useLayoutEffect(() => {
     const { videoElement } = ref.current as any;
-    let cancelFn: NodeJS.Timeout | null = null;
+    let interval: NodeJS.Timeout;
     if (isVideoElement(videoElement)) {
       const element = videoElement;
 
       //set start time
+      console.log(startTime);
       element.currentTime = startTime;
 
       if (element.currentTime) {
@@ -124,7 +125,24 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({
             },
           });
         });
+        interval = setInterval(async () => {
+          try {
+            await update({
+              variables: {
+                roomCode,
+                timeStamp: Math.floor(videoElement.currentTime),
+              },
+            });
+          } catch (e) {
+            console.error(e);
+          }
+        }, 1000);
+      } else {
+        videoElement.controls = false;
       }
+      return () => {
+        return clearTimeout(interval);
+      };
     }
   }, [ref.current]);
 

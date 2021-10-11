@@ -17,19 +17,24 @@ import ActionText from "./ActionText";
 interface ChatSectionProps {
   onClose: () => void;
   roomCode: string;
+  updateUnread: () => void;
 }
 
 const actionMapper = (action: GetMessages_room_actions) => {
   switch (action.actionType) {
-    case ActionType.MESSAGE:
+    case ActionType.MESSAGE: {
       return (
         <MessageAlert
-          key={action.payload + action.createdBy.id + action.id}
+          key={
+            action.payload + action.createdBy.id + action.id + action.createdAt
+          }
           payload={action.payload}
           createdBy={action.createdBy}
           createdAt={action.createdAt}
         />
       );
+    }
+
     case ActionType.PAUSE:
     case ActionType.PLAY:
     case ActionType.SEEK:
@@ -57,6 +62,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
       variables: { roomCode: roomCode },
       updateQuery: (prev, { subscriptionData }) => {
         if (!subscriptionData.data) return prev;
+        if (!subscriptionData.data.messages.id) return prev;
         const newMessage = subscriptionData.data;
         console.log(subscriptionData.data);
         return Object.assign({}, prev, {
@@ -79,7 +85,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
           onClose();
         }
       }}
-      className="h-full w-96 rounded-2xl p-2 pb-4 bg-black border-green-900 border text-gray-300 shadow-lg"
+      className="h-full w-96 rounded-3xl p-2 pb-4 bg-black border-gray-700 border-4 text-gray-300 shadow-lg"
     >
       <button onClick={onClose} className="float-right pr-3">
         <svg

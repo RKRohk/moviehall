@@ -1,4 +1,4 @@
-import { useQuery } from "@apollo/client";
+import { useQuery, useSubscription } from "@apollo/client";
 import { Transition } from "@headlessui/react";
 import { Fragment, useState } from "react";
 import { useHistory, useParams } from "react-router";
@@ -6,14 +6,23 @@ import ChatSection from "../components/ChatSection";
 import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
 import { URL_QUERY } from "../graphql/queries";
-import { MediaUrl, MediaUrlVariables } from "../types/api";
+import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
+import {
+  MediaUrl,
+  MediaUrlVariables,
+  SubscribeToAction,
+  SubscribeToActionVariables,
+} from "../types/api";
 
 const MovieHall = () => {
   const [chatVisibility, setChatVisibility] = useState(false);
 
   const { roomCode } = useParams<{ roomCode: string }>();
 
-  const toggleVisibility = () => setChatVisibility(!chatVisibility);
+  const toggleVisibility = () => {
+    setUnread(0);
+    setChatVisibility(!chatVisibility);
+  };
 
   const { data, error } = useQuery<MediaUrl, MediaUrlVariables>(URL_QUERY, {
     variables: { roomCode },
@@ -21,20 +30,38 @@ const MovieHall = () => {
 
   const history = useHistory();
 
+  const [unread, setUnread] = useState(0);
+
+  const addUnread = () => {
+    setUnread((unread) => unread + 1);
+  };
+
   if (error) {
     console.error(error);
     history.push("/");
   }
 
+  useSubscription<SubscribeToAction, SubscribeToActionVariables>(
+    SUBSCRIBE_TO_ACTION,
+    {
+      variables: { roomCode },
+      onSubscriptionData: () => {
+        addUnread();
+      },
+    }
+  );
+
   return (
     <div className="relative bg-black text-gray-200">
       <div className="w-full h-screen flex">
         <div className="w-full my-auto">
-          <VideoPlayer
-            uri={data?.room?.media.uri ?? ""}
-            roomCode={roomCode}
-            startTime={data?.room?.timestamp ?? 0}
-          />
+          {data && (
+            <VideoPlayer
+              uri={data?.room?.media.uri ?? ""}
+              roomCode={roomCode}
+              startTime={data?.room?.timestamp ?? 0}
+            />
+          )}
         </div>
       </div>
       <Transition
@@ -47,9 +74,15 @@ const MovieHall = () => {
         leaveTo="translate-x-full"
       >
         <div className="absolute z-10 bottom-36 right-10">
-          <ChatSection onClose={toggleVisibility} roomCode={roomCode} />
+          <ChatSection
+            onClose={toggleVisibility}
+            roomCode={roomCode}
+            updateUnread={addUnread}
+          />
         </div>
       </Transition>
+
+      {/* Button to control chat section visibility */}
       <Transition
         as={Fragment}
         show={!chatVisibility}
@@ -64,8 +97,16 @@ const MovieHall = () => {
           className="absolute z-10 right-32 bottom-32 p-4 rounded-full bg-green-700 focus:ring-0"
           onClick={() => {
             setChatVisibility(!chatVisibility);
+            setUnread(0);
           }}
         >
+          {!!unread && (
+            <>
+              <span className="animate-ping absolute opacity-75 inline-flex top-0 right-0 bg-purple-500 h-3 w-3 rounded-full"></span>
+              <span className="absolute opacity-75 inline-flex top-0 right-0 bg-purple-600 h-3 w-3 rounded-full"></span>
+            </>
+          )}
+
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5 text-gray-700"
