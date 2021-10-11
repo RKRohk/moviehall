@@ -1,13 +1,15 @@
 import { useQuery, useSubscription } from "@apollo/client";
 import { Transition } from "@headlessui/react";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 import ChatSection from "../components/ChatSection";
 import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
-import { URL_QUERY } from "../graphql/queries";
+import { GET_MESSAGES_QUERY, URL_QUERY } from "../graphql/queries";
 import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
 import {
+  GetMessages,
+  GetMessagesVariables,
   MediaUrl,
   MediaUrlVariables,
   SubscribeToAction,
@@ -24,9 +26,37 @@ const MovieHall = () => {
     setChatVisibility(!chatVisibility);
   };
 
-  const { data, error } = useQuery<MediaUrl, MediaUrlVariables>(URL_QUERY, {
+  const media = useQuery<MediaUrl, MediaUrlVariables>(URL_QUERY, {
     variables: { roomCode },
   });
+
+  const { data, loading, error, subscribeToMore } = useQuery<
+    GetMessages,
+    GetMessagesVariables
+  >(GET_MESSAGES_QUERY, {
+    variables: { roomCode },
+  });
+
+  const subscribeToMessages = () =>
+    subscribeToMore<SubscribeToAction>({
+      document: SUBSCRIBE_TO_ACTION,
+      variables: { roomCode: roomCode },
+
+      updateQuery: (prev, { subscriptionData }) => {
+        addUnread();
+        if (!subscriptionData.data) return prev;
+        if (!subscriptionData.data.messages.id) return prev;
+        const newMessage = subscriptionData.data;
+        console.log(subscriptionData.data);
+        return Object.assign({}, prev, {
+          room: { actions: [newMessage.messages] },
+        });
+      },
+    });
+
+  useEffect(() => {
+    subscribeToMessages();
+  }, []);
 
   const history = useHistory();
 
@@ -36,20 +66,10 @@ const MovieHall = () => {
     setUnread((unread) => unread + 1);
   };
 
-  if (error) {
-    console.error(error);
+  if (error || media.error) {
+    console.error(error, media.error);
     history.push("/");
   }
-
-  useSubscription<SubscribeToAction, SubscribeToActionVariables>(
-    SUBSCRIBE_TO_ACTION,
-    {
-      variables: { roomCode },
-      onSubscriptionData: () => {
-        addUnread();
-      },
-    }
-  );
 
   return (
     <div className="relative bg-black text-gray-200">
@@ -57,9 +77,9 @@ const MovieHall = () => {
         <div className="w-full my-auto">
           {data && (
             <VideoPlayer
-              uri={data?.room?.media.uri ?? ""}
+              uri={media.data?.room?.media.uri ?? ""}
               roomCode={roomCode}
-              startTime={data?.room?.timestamp ?? 0}
+              startTime={media.data?.room?.timestamp ?? 0}
             />
           )}
         </div>
@@ -77,7 +97,7 @@ const MovieHall = () => {
           <ChatSection
             onClose={toggleVisibility}
             roomCode={roomCode}
-            updateUnread={addUnread}
+            actions={data?.room?.actions ?? []}
           />
         </div>
       </Transition>
