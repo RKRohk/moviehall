@@ -1,4 +1,4 @@
-import firebase from "firebase"
+import firebase from "firebase";
 export const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -6,15 +6,17 @@ export const firebaseConfig = {
   storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.REACT_APP_FIREABASE_MESSAGE_SENDER_ID,
   appId: process.env.REACT_APP_FIREABASE_APP_ID,
-  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
-export const firebaseApp = firebase.apps.length > 0 ? firebase.apps[0] : firebase.initializeApp(firebaseConfig);
-export const auth = firebase.auth()
+export const firebaseApp =
+  firebase.apps.length > 0
+    ? firebase.apps[0]
+    : firebase.initializeApp(firebaseConfig);
+export const auth = firebase.auth();
 
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-// eslint-disable-next-line no-restricted-globals
 // if (location.hostname === 'localhost') {
 //   auth.useEmulator('http://localhost:9099/');
 // }
