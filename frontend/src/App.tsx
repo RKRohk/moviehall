@@ -24,7 +24,7 @@ const httpLink = new HttpLink({
 });
 
 const wsLink = new WebSocketLink({
-  uri: "ws://localhost:8080/query",
+  uri: `ws://${window.location.hostname}:8080/query`,
   options: {
     reconnect: true,
   },
