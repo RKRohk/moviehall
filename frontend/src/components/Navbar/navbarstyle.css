@@ -1,0 +1,27 @@
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+h1 {
+  --border-color: #fff;
+  --border-width: 2px;
+  --bottom-distance: 0px;
+
+  background-image: linear-gradient(var(--border-color), var(--border-color));
+  background-size: 0% var(--border-width);
+  background-repeat: no-repeat;
+  transition: background-size 0.3s;
+}
+
+.navbar-link {
+  background-position: 50% calc(100% - var(--bottom-distance));
+}
+
+h1:hover {
+  background-size: 100% var(--border-width);
+}

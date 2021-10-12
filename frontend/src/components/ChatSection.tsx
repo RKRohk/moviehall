@@ -75,7 +75,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
        * Captures the escape key (code 27) and closes the popup
        */
       onKeyDown={(e) => {
-        if (e.keyCode == 27) {
+        if (e.keyCode === 27) {
           onClose();
         }
       }}
