@@ -1,74 +1,42 @@
 import MessageAlert from "./MessagAlert";
 import MessageBox from "./MessageBox";
-import { useQuery, gql, useSubscription } from "@apollo/client";
 import React, { useEffect } from "react";
-import { GET_MESSAGES_QUERY } from "../graphql/queries";
-import {
-  ActionType,
-  GetMessages,
-  GetMessagesVariables,
-  GetMessages_room_actions,
-  SubscribeToAction,
-} from "../types/api";
-import { useHistory, useParams } from "react-router";
-import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
+import { ActionType, GetMessages_room_actions } from "../types/api";
+
 import ActionText from "./ActionText";
 
 interface ChatSectionProps {
   onClose: () => void;
   roomCode: string;
+  actions: GetMessages_room_actions[];
 }
 
 const actionMapper = (action: GetMessages_room_actions) => {
   switch (action.actionType) {
-    case ActionType.MESSAGE:
+    case ActionType.MESSAGE: {
       return (
         <MessageAlert
-          key={action.payload + action.createdBy.id + action.id}
+          key={
+            action.payload + action.createdBy.id + action.id + action.createdAt
+          }
           payload={action.payload}
           createdBy={action.createdBy}
           createdAt={action.createdAt}
         />
       );
+    }
+
     case ActionType.PAUSE:
     case ActionType.PLAY:
     case ActionType.SEEK:
       return <ActionText action={action} />;
   }
 };
-const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
-  const { data, loading, error, subscribeToMore } = useQuery<
-    GetMessages,
-    GetMessagesVariables
-  >(GET_MESSAGES_QUERY, {
-    variables: { roomCode },
-  });
-
-  const history = useHistory();
-
-  //Do not load the chat if the room does not exist
-  if (error) {
-    history.push("/");
-  }
-
-  const subscribeToMessages = () =>
-    subscribeToMore<SubscribeToAction>({
-      document: SUBSCRIBE_TO_ACTION,
-      variables: { roomCode: roomCode },
-      updateQuery: (prev, { subscriptionData }) => {
-        if (!subscriptionData.data) return prev;
-        const newMessage = subscriptionData.data;
-        console.log(subscriptionData.data);
-        return Object.assign({}, prev, {
-          room: { actions: [newMessage.messages] },
-        });
-      },
-    });
-
-  useEffect(() => {
-    subscribeToMessages();
-  }, []);
-
+const ChatSection: React.VFC<ChatSectionProps> = ({
+  onClose,
+  roomCode,
+  actions,
+}) => {
   return (
     <div
       /**
@@ -79,7 +47,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
           onClose();
         }
       }}
-      className="h-full w-96 rounded-2xl p-2 pb-4 bg-black border-green-900 border text-gray-300 shadow-lg"
+      className="h-full w-96 rounded-3xl p-2 pb-4 bg-black border-gray-700 border-4 text-gray-300 shadow-lg"
     >
       <button onClick={onClose} className="float-right pr-3">
         <svg
@@ -105,8 +73,8 @@ const ChatSection: React.VFC<ChatSectionProps> = ({ onClose, roomCode }) => {
       <div className="overflow-auto flex max-h-96 flex-col-reverse">
         <div className="p-2">
           <ul className="space-y-2 flex flex-col">
-            {loading && "loading..."}
-            {data?.room?.actions.map(actionMapper)}
+            {!actions && "loading..."}
+            {actions.map(actionMapper)}
           </ul>
         </div>
       </div>
