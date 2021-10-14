@@ -68,7 +68,7 @@ func main() {
 
 	staticPath := "build"
 	indexPath := "index.html"
-	router.HandleFunc("/", utils.IndexRouter(staticPath, indexPath))
+	router.HandleFunc("/*", utils.IndexRouter(staticPath, indexPath))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))

@@ -94,7 +94,7 @@ export default function Navbar() {
                 <div className="flex items-center mt-2 -mx-2 sm:mt-0">
                   {!signedIn && (
                     <NavLink
-                      to="/"
+                      to="/login"
                       className="px-3 py-2 mx-2 text-sm font-semibold text-white bg-black rounded-md hover:bg-gray-800"
                     >
                       Sign In
