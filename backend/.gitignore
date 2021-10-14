@@ -4,3 +4,4 @@ firebase.json
 ui-debug.log
 .firebaserc
 videos/
+build/
