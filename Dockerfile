@@ -19,6 +19,6 @@ RUN yarn build
 FROM scratch as runner
 WORKDIR /app
 COPY --from=build /app/moviehall ./
-COPY --from=web_build /app/build ./
+COPY --from=web_build /app/build/. ./build/
 COPY --from=build /app/firebase-config.json .
 CMD [ "./moviehall" ]
