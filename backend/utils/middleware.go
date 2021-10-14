@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"firebase.google.com/go/v4/auth"
@@ -70,4 +72,28 @@ func WsAuthMiddleware(auth *auth.Client) func(ctx context.Context, initPayload t
 func UserFromContext(ctx context.Context) *model.User {
 	raw, _ := ctx.Value(userCtxKey).(*model.User)
 	return raw
+}
+
+func IndexRouter(staticPath, indexPath string) func(rw http.ResponseWriter, r *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		path, err := filepath.Abs(r.URL.Path)
+		if err != nil {
+
+			http.Error(rw, err.Error(), http.StatusBadRequest)
+			return
+		}
+		path = filepath.Join(staticPath, path)
+
+		_, err = os.Stat(path)
+		if os.IsNotExist(err) {
+			http.ServeFile(rw, r, filepath.Join(staticPath, indexPath))
+			return
+		} else if err != nil {
+
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.FileServer(http.Dir(staticPath)).ServeHTTP(rw, r)
+	}
 }

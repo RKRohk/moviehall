@@ -58,13 +58,17 @@ func main() {
 	}
 	router.Use(utils.Middleware(auth))
 
-	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	router.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", srv)
 
 	workDir, _ := os.Getwd()
 	videosDirectory := http.Dir(filepath.Join(workDir, "/videos"))
 
 	router.Get("/videos/*", utils.FileServer(videosDirectory))
+
+	staticPath := "build"
+	indexPath := "index.html"
+	router.HandleFunc("/", utils.IndexRouter(staticPath, indexPath))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
