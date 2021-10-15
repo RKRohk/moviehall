@@ -1,8 +1,9 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, Fragment } from "react";
 import { Link } from "react-router-dom";
 import "./navbarstyle.css";
 import { FirebaseContext } from "../../context/firebaseContext";
 import { NavLink } from "react-router-dom";
+import { Menu, Transition } from "@headlessui/react";
 
 let isOpen = false;
 
@@ -24,6 +25,10 @@ const Toggle2 = (y: any, x: any) => {
   x[2].style.transition = "transform 0.4s ease-in";
   isOpen = true;
 };
+
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 const handleClick = () => {
   const y = document.getElementById("drop-down");
@@ -102,7 +107,68 @@ export default function Navbar() {
                   )}
 
                   {signedIn && (
-                    <div> Hello {auth.currentUser?.displayName} !</div>
+                    <Menu as="div" className="ml-3 relative">
+                      <div>
+                        <Menu.Button className=" flex text-sm rounded-full focus:outline-none focus:ring-white">
+                          <span className="font-extrabold text-lg">{`Hello ${auth.currentUser?.displayName}!`}</span>
+                        </Menu.Button>
+                      </div>
+                      <Transition
+                        as={Fragment}
+                        enter="transition ease-out duration-100"
+                        enterFrom="transform opacity-0 scale-95"
+                        enterTo="transform opacity-100 scale-100"
+                        leave="transition ease-in duration-75"
+                        leaveFrom="transform opacity-100 scale-100"
+                        leaveTo="transform opacity-0 scale-95"
+                      >
+                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                          <Menu.Item>
+                            {({ active }) => (
+                              <a
+                                href="#"
+                                className={classNames(
+                                  active ? "bg-gray-100" : "",
+                                  "block px-4 py-2 text-sm text-gray-700"
+                                )}
+                              >
+                                Your Profile
+                              </a>
+                            )}
+                          </Menu.Item>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <a
+                                href="#"
+                                className={classNames(
+                                  active ? "bg-gray-100" : "",
+                                  "block px-4 py-2 text-sm text-gray-700"
+                                )}
+                              >
+                                Settings
+                              </a>
+                            )}
+                          </Menu.Item>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <a
+                                href="#"
+                                className={classNames(
+                                  active ? "bg-gray-100" : "",
+                                  "block px-4 py-2 text-sm text-gray-700"
+                                )}
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  await auth.signOut();
+                                }}
+                              >
+                                Sign out
+                              </a>
+                            )}
+                          </Menu.Item>
+                        </Menu.Items>
+                      </Transition>
+                    </Menu>
                   )}
                 </div>
               </div>
