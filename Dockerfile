@@ -21,4 +21,5 @@ WORKDIR /app
 COPY --from=build /app/moviehall ./
 COPY --from=web_build /app/build/. ./build/
 COPY --from=build /app/firebase-config.json .
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 CMD [ "./moviehall" ]
