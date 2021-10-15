@@ -49,7 +49,9 @@ const MovieHall = () => {
         const newMessage = subscriptionData.data;
         console.log(subscriptionData.data);
         return Object.assign({}, prev, {
-          room: { actions: [newMessage.messages] },
+          room: {
+            actions: [newMessage.messages, ...(prev.room?.actions ?? [])],
+          },
         });
       },
     });

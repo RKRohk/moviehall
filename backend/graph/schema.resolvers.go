@@ -75,9 +75,11 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 
 		//Runs a goroutine to send message to every listener.
 		//This was done to reduce the time taken to get the message back to the sender
-		go func(localObserver *struct{ Action chan *model.Action }) {
-			localObserver.Action <- newMessage
-		}(&observer)
+		// go func(localObserver *struct{ Action chan *model.Action }) {
+		// 	localObserver.Action <- newMessage
+		// }(&observer)
+
+		observer.Action <- newMessage
 	}
 
 	return newMessage, nil
