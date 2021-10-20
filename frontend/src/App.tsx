@@ -31,7 +31,7 @@ const wsLink = new WebSocketLink({
   }`,
   options: {
     connectionParams: async () => {
-      const token = await auth.currentUser?.getIdToken();
+      const token = (await auth.currentUser?.getIdToken()) ?? "";
       return {
         Auth: `Bearer ${token}`,
       };
