@@ -30,6 +30,12 @@ const wsLink = new WebSocketLink({
       : "wss://" + window.location.hostname + "/query"
   }`,
   options: {
+    connectionParams: async () => {
+      const token = await auth.currentUser?.getIdToken();
+      return {
+        Auth: `Bearer ${token}`,
+      };
+    },
     reconnect: true,
   },
 });

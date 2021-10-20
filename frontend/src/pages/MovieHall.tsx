@@ -13,7 +13,6 @@ import {
   MediaUrl,
   MediaUrlVariables,
   SubscribeToAction,
-  SubscribeToActionVariables,
 } from "../types/api";
 
 const MovieHall = () => {
@@ -41,8 +40,7 @@ const MovieHall = () => {
     subscribeToMore<SubscribeToAction>({
       document: SUBSCRIBE_TO_ACTION,
       variables: { roomCode: roomCode },
-
-      updateQuery: (prev, { subscriptionData }) => {
+      updateQuery: (prev, { subscriptionData }): GetMessages => {
         addUnread();
         if (!subscriptionData.data) return prev;
         if (!subscriptionData.data.messages.id) return prev;
@@ -64,6 +62,8 @@ const MovieHall = () => {
 
   const [unread, setUnread] = useState(0);
 
+  const [showHall, setShowHall] = useState(false);
+
   const addUnread = () => {
     setUnread((unread) => unread + 1);
   };
@@ -71,6 +71,23 @@ const MovieHall = () => {
   if (error || media.error) {
     console.error(error, media.error);
     history.push("/");
+  }
+
+  //User needs to interact with page so that autoplay can work
+  if (!showHall) {
+    return (
+      <div>
+        <h1>Do you want to enter ??</h1>
+        <button
+          onClick={() => {
+            setShowHall(!showHall);
+          }}
+        >
+          {" "}
+          Click Me
+        </button>
+      </div>
+    );
   }
 
   return (

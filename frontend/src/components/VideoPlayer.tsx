@@ -73,6 +73,7 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({
     SUBSCRIBE_TO_ACTION,
     {
       variables: { roomCode },
+      skip: amIOwner,
       onSubscriptionData: (data) => {
         const videoElement = ref.current?.videoElement;
         if (isVideoElement(videoElement)) {
@@ -96,8 +97,8 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({
   );
 
   useLayoutEffect(() => {
-    const { videoElement } = ref.current as any;
     let interval: NodeJS.Timeout;
+    const { player, ui, videoElement } = ref.current as any;
     if (isVideoElement(videoElement)) {
       const element = videoElement;
 
@@ -138,13 +139,29 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({
           }
         }, 1000);
       } else {
+        element.addEventListener("pause", (e) => {
+          e.preventDefault();
+        });
+        element.addEventListener("play", (e) => {
+          e.preventDefault();
+        });
+        const config = {
+          addSeekBar: false,
+          addBigPlayButton: false,
+          controlPanelElements: ["time_and_duration", "overflow_menu"],
+          overflowMenuButtons: ["captions", "quality"],
+        };
+        if (ui) {
+          ui.configure(config);
+        }
+
         videoElement.controls = false;
       }
       return () => {
         return clearTimeout(interval);
       };
     }
-  }, [ref.current]);
+  }, [ref.current, amIOwner]);
 
   return <ShakaPlayer ref={ref} src={uri} />;
 };

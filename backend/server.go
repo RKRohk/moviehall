@@ -42,7 +42,7 @@ func main() {
 
 	srv.AddTransport(transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
-		// InitFunc:              utils.WsAuthMiddleware(auth),
+		InitFunc:              utils.WsAuthMiddleware(auth),
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
