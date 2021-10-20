@@ -3,6 +3,7 @@ import { Transition } from "@headlessui/react";
 import { Fragment, useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 import ChatSection from "../components/ChatSection";
+import EnterRoom from "../components/EnterRoom";
 import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
 import { GET_MESSAGES_QUERY, URL_QUERY } from "../graphql/queries";
@@ -76,17 +77,11 @@ const MovieHall = () => {
   //User needs to interact with page so that autoplay can work
   if (!showHall) {
     return (
-      <div>
-        <h1>Do you want to enter ??</h1>
-        <button
-          onClick={() => {
-            setShowHall(!showHall);
-          }}
-        >
-          {" "}
-          Click Me
-        </button>
-      </div>
+      <EnterRoom
+        onClick={(e) => {
+          setShowHall(!showHall);
+        }}
+      />
     );
   }
 
