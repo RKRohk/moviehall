@@ -6,13 +6,19 @@ pipeline {
         stage('Build') {
           steps {
             telegramSend(message: 'starting build', chatId: 162889325)
-            sh 'echo $USER && docker build . -t sample'
+            sh 'docker build . -t sample'
           }
         }
 
         stage('Testing config') {
           steps {
-            sh 'echo $USER'
+            sh '''/bin/bash
+
+echo $USER
+
+ls
+
+pwd'''
           }
         }
 
