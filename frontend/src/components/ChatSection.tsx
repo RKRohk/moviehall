@@ -70,7 +70,7 @@ const ChatSection: React.VFC<ChatSectionProps> = ({
         <p>Room Code {roomCode}</p>{" "}
         <button className="inline-block">Copy</button>
       </div>
-      <div className="overflow-auto flex 2xl:max-h-96 xl:max-h-80 md:max-h-32 sm:max-h-28 flex-col-reverse">
+      <div className="overflow-auto flex 2xl:max-h-96 xl:max-h-80 md:max-h-32 sm:max-h-14 flex-col-reverse">
         <div className="p-2">
           <ul className="space-y-2 flex flex-col">
             {!actions && "loading..."}
