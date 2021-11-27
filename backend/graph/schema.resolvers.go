@@ -10,6 +10,7 @@ import (
 
 	"github.com/rkrohk/moviehall/graph/generated"
 	"github.com/rkrohk/moviehall/graph/model"
+	"github.com/rkrohk/moviehall/resolverutils"
 	"github.com/rkrohk/moviehall/utils"
 )
 
@@ -24,17 +25,9 @@ func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput)
 		return nil, fmt.Errorf("user is not authenticated")
 	}
 
-	roomCode := utils.RandomString(8)
-	newRoom := &model.Room{
-		ID:                 roomCode,
-		Code:               roomCode,
-		Media:              &model.Media{URI: uri.URI},
-		MessageObservers:   make(map[string]struct{ Action chan *model.Action }),
-		Timestamp:          0,
-		TimeStampObservers: map[string]struct{ Timestamp chan int }{},
-		Owner:              user,
-	}
-	r.Rooms[roomCode] = newRoom
+	newRoom := resolverutils.NewRoom(user, uri.URI)
+
+	r.addRoom(newRoom)
 
 	return newRoom, nil
 }
@@ -60,24 +53,12 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 		return nil, fmt.Errorf("user is not authenticated")
 	}
 
-	newMessage := &model.Action{
-		ID:         utils.RandomString(16),
-		CreatedBy:  user,
-		CreatedAt:  time.Now(),
-		Payload:    message,
-		ActionType: model.ActionTypeMessage,
-	}
+	newMessage := resolverutils.NewAction(user, message, model.ActionTypeMessage)
 
-	room.Actions = append(room.Actions, newMessage)
+	r.addActionToRoom(room, newMessage)
 
 	//Sending the new message to every user in the room
 	for _, observer := range room.MessageObservers {
-
-		//Runs a goroutine to send message to every listener.
-		//This was done to reduce the time taken to get the message back to the sender
-		// go func(localObserver *struct{ Action chan *model.Action }) {
-		// 	localObserver.Action <- newMessage
-		// }(&observer)
 
 		observer.Action <- newMessage
 	}
@@ -234,6 +215,14 @@ func (r *mutationResolver) Update(ctx context.Context, roomCode string, timeStam
 	return &ret, nil
 }
 
+func (r *mutationResolver) Join(ctx context.Context, roomCode string) (*bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) Leave(ctx context.Context, roomCode string, userID string) (*bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *queryResolver) Media(ctx context.Context) ([]*model.Media, error) {
 	panic(fmt.Errorf("not implemented"))
 }
@@ -316,10 +305,4 @@ type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
 var ret bool = true
