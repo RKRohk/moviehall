@@ -62,6 +62,8 @@ type Mutation {
   play(roomCode: String!): Boolean
   seek(roomCode: String!, timeStamp: Int!): Boolean
   update(roomCode: String!, timeStamp: Int!): Boolean
+  join(roomCode: String!): Boolean
+  leave(roomCode: String!, userID: String!): Boolean
 }
 
 type Subscription {

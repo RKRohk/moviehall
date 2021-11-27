@@ -62,6 +62,8 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		CreateRoom  func(childComplexity int, uri model.MediaInput) int
+		Join        func(childComplexity int, roomCode string) int
+		Leave       func(childComplexity int, roomCode string, userID string) int
 		Pause       func(childComplexity int, roomCode string) int
 		Play        func(childComplexity int, roomCode string) int
 		Seek        func(childComplexity int, roomCode string, timeStamp int) int
@@ -103,6 +105,8 @@ type MutationResolver interface {
 	Play(ctx context.Context, roomCode string) (*bool, error)
 	Seek(ctx context.Context, roomCode string, timeStamp int) (*bool, error)
 	Update(ctx context.Context, roomCode string, timeStamp int) (*bool, error)
+	Join(ctx context.Context, roomCode string) (*bool, error)
+	Leave(ctx context.Context, roomCode string, userID string) (*bool, error)
 }
 type QueryResolver interface {
 	Media(ctx context.Context) ([]*model.Media, error)
@@ -195,6 +199,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateRoom(childComplexity, args["uri"].(model.MediaInput)), true
+
+	case "Mutation.join":
+		if e.complexity.Mutation.Join == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_join_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Join(childComplexity, args["roomCode"].(string)), true
+
+	case "Mutation.leave":
+		if e.complexity.Mutation.Leave == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_leave_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Leave(childComplexity, args["roomCode"].(string), args["userID"].(string)), true
 
 	case "Mutation.pause":
 		if e.complexity.Mutation.Pause == nil {
@@ -514,6 +542,8 @@ type Mutation {
   play(roomCode: String!): Boolean
   seek(roomCode: String!, timeStamp: Int!): Boolean
   update(roomCode: String!, timeStamp: Int!): Boolean
+  join(roomCode: String!): Boolean
+  leave(roomCode: String!, userID: String!): Boolean
 }
 
 type Subscription {
@@ -540,6 +570,45 @@ func (ec *executionContext) field_Mutation_createRoom_args(ctx context.Context, 
 		}
 	}
 	args["uri"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_join_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["roomCode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roomCode"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["roomCode"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_leave_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["roomCode"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roomCode"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["roomCode"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["userID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg1
 	return args, nil
 }
 
@@ -1244,6 +1313,84 @@ func (ec *executionContext) _Mutation_update(ctx context.Context, field graphql.
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().Update(rctx, args["roomCode"].(string), args["timeStamp"].(int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_join(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_join_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Join(rctx, args["roomCode"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_leave(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_leave_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Leave(rctx, args["roomCode"].(string), args["userID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3120,6 +3267,10 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_seek(ctx, field)
 		case "update":
 			out.Values[i] = ec._Mutation_update(ctx, field)
+		case "join":
+			out.Values[i] = ec._Mutation_join(ctx, field)
+		case "leave":
+			out.Values[i] = ec._Mutation_leave(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
