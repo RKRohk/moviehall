@@ -488,6 +488,8 @@ enum ActionType {
   PLAY
   SEEK
   UPDATE
+  USER_JOIN
+  USER_LEAVE
 }
 
 type User {
