@@ -29,6 +29,7 @@ const actionMapper = (action: GetMessages_room_actions) => {
     case ActionType.PAUSE:
     case ActionType.PLAY:
     case ActionType.SEEK:
+    case ActionType.USER_JOIN:
       return <ActionText action={action} />;
   }
 };

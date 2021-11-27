@@ -203,7 +203,30 @@ func (r *mutationResolver) Update(ctx context.Context, roomCode string, timeStam
 }
 
 func (r *mutationResolver) Join(ctx context.Context, roomCode string) (*bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	room := r.Rooms[roomCode]
+	if room == nil {
+		return nil, fmt.Errorf("roomcode %s not found", roomCode)
+	}
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
+	userJoinedAction := resolverutils.NewAction(user, fmt.Sprintf("%s joined the room", user.Name), model.ActionTypeUserJoin, nil)
+
+	r.addActionToRoom(room, userJoinedAction)
+
+	for _, observer := range room.MessageObservers {
+		observer.Action <- userJoinedAction
+	}
+
+	return &ret, nil
+
 }
 
 func (r *mutationResolver) Leave(ctx context.Context, roomCode string, userID string) (*bool, error) {

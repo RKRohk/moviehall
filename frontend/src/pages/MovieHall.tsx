@@ -1,4 +1,4 @@
-import { useQuery, useSubscription } from "@apollo/client";
+import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { Transition } from "@headlessui/react";
 import { Fragment, useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
@@ -6,6 +6,7 @@ import ChatSection from "../components/ChatSection";
 import EnterRoom from "../components/EnterRoom";
 import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
+import { JOIN_ROOM } from "../graphql/mutations";
 import { GET_MESSAGES_QUERY, URL_QUERY } from "../graphql/queries";
 import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
 import {
@@ -14,6 +15,8 @@ import {
   MediaUrl,
   MediaUrlVariables,
   SubscribeToAction,
+  userJoinedRoom,
+  userJoinedRoomVariables,
 } from "../types/api";
 
 const MovieHall = () => {
@@ -55,8 +58,16 @@ const MovieHall = () => {
       },
     });
 
+  const [sendUserJoinedMessage] = useMutation<
+    userJoinedRoom,
+    userJoinedRoomVariables
+  >(JOIN_ROOM, {
+    variables: { roomCode: roomCode },
+  });
+
   useEffect(() => {
     subscribeToMessages();
+    sendUserJoinedMessage();
   }, []);
 
   const history = useHistory();

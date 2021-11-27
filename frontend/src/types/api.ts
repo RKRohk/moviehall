@@ -119,6 +119,23 @@ export interface updateVariables {
 // This file was automatically generated and should not be edited.
 
 // ====================================================
+// GraphQL mutation operation: userJoinedRoom
+// ====================================================
+
+export interface userJoinedRoom {
+  join: boolean | null;
+}
+
+export interface userJoinedRoomVariables {
+  roomCode: string;
+}
+
+/* tslint:disable */
+/* eslint-disable */
+// @generated
+// This file was automatically generated and should not be edited.
+
+// ====================================================
 // GraphQL query operation: GetMessages
 // ====================================================
 
@@ -298,6 +315,8 @@ export enum ActionType {
   SEEK = "SEEK",
   TYPING = "TYPING",
   UPDATE = "UPDATE",
+  USER_JOIN = "USER_JOIN",
+  USER_LEAVE = "USER_LEAVE",
 }
 
 //==============================================================

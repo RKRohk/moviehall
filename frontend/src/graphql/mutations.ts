@@ -38,3 +38,9 @@ export const UPDATE_TIMESTAMP = gql`
         update(roomCode:$roomCode,timeStamp:$timeStamp)
     }
 `
+
+export const JOIN_ROOM = gql`
+    mutation userJoinedRoom($roomCode:String!){
+        join(roomCode:$roomCode)
+    }
+`
