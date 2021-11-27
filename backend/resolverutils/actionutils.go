@@ -7,14 +7,15 @@ import (
 	"github.com/rkrohk/moviehall/utils"
 )
 
-func NewAction(createdBy *model.User, payload string, actionType model.ActionType) *model.Action {
+func NewAction(createdBy *model.User, payload string, actionType model.ActionType, timestamp *int) *model.Action {
 
 	newAction := &model.Action{
-		ID:         utils.RandomString(16),
-		CreatedBy:  createdBy,
-		CreatedAt:  time.Now(),
-		Payload:    payload,
-		ActionType: actionType,
+		ID:              utils.RandomString(16),
+		CreatedBy:       createdBy,
+		CreatedAt:       time.Now(),
+		Payload:         payload,
+		ActionType:      actionType,
+		ActionTimeStamp: timestamp,
 	}
 
 	return newAction

@@ -53,7 +53,7 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 		return nil, fmt.Errorf("user is not authenticated")
 	}
 
-	newMessage := resolverutils.NewAction(user, message, model.ActionTypeMessage)
+	newMessage := resolverutils.NewAction(user, message, model.ActionTypeMessage, nil)
 
 	r.addActionToRoom(room, newMessage)
 
@@ -127,15 +127,9 @@ func (r *mutationResolver) Play(ctx context.Context, roomCode string) (*bool, er
 		return nil, fmt.Errorf("user is not room owner")
 	}
 
-	newAction := &model.Action{
-		ID:         utils.RandomString(10),
-		CreatedBy:  user,
-		CreatedAt:  time.Now(),
-		Payload:    fmt.Sprintf("%s played the video", user.Name),
-		ActionType: model.ActionTypePlay,
-	}
+	newAction := resolverutils.NewAction(user, fmt.Sprintf("%s played the video", user.Name), model.ActionTypePlay, nil)
 
-	room.Actions = append(room.Actions, newAction)
+	r.addActionToRoom(room, newAction)
 
 	//Sending the new pause action to every user in the room
 	for _, observer := range room.MessageObservers {
@@ -167,16 +161,9 @@ func (r *mutationResolver) Seek(ctx context.Context, roomCode string, timeStamp 
 		return nil, fmt.Errorf("user is not room owner")
 	}
 
-	newAction := &model.Action{
-		ID:              utils.RandomString(10),
-		CreatedBy:       user,
-		CreatedAt:       time.Now(),
-		Payload:         fmt.Sprintf("%s seeked the video", user.Name),
-		ActionType:      model.ActionTypeSeek,
-		ActionTimeStamp: &timeStamp,
-	}
+	newAction := resolverutils.NewAction(user, fmt.Sprintf("%s seeked the video", user.Name), model.ActionTypeSeek, &timeStamp)
 
-	room.Actions = append(room.Actions, newAction)
+	r.addActionToRoom(room, newAction)
 
 	//Sending the new pause action to every user in the room
 	for _, observer := range room.MessageObservers {
