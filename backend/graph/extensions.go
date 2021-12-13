@@ -10,8 +10,5 @@ func (r *Resolver) addRoom(room *model.Room) {
 }
 
 func (r *Resolver) addActionToRoom(room *model.Room, action *model.Action) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	room.Actions = append(room.Actions, action)
 }

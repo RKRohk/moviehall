@@ -11,16 +11,22 @@ const Home: React.FC = () => {
     CREATE_ROOM_MUTATION
   );
 
+  const [error, setError] = useState("");
+
   const history = useHistory();
   const onClick = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submitting");
     try {
       const { data, errors } = await createRoom({ variables: { uri: url } });
       const code = data?.createRoom.code;
-      console.log(code);
+      console.log(data);
+      console.error(errors);
       history.push(`/room/${code}`);
-    } catch (e) {
+      setError("");
+    } catch (e: unknown) {
       console.error(e);
+      setError(String(e));
     }
   };
 
@@ -47,10 +53,6 @@ const Home: React.FC = () => {
                   className="mx-auto flex flex-col w-60 gap-y-5"
                   onSubmit={onClick}
                 >
-                  {/* <input
-                    placeholder={"Enter the URL"}
-                    className="focus:outline-none rounded-lg p-1 border-black border"
-                  /> */}
                   <input
                     value={url}
                     onChange={(e) => {
@@ -60,6 +62,7 @@ const Home: React.FC = () => {
                     className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg focus:border-blue-300 dark:focus:border-blue-300 focus:outline-none focus:ring"
                     placeholder="Enter the URL"
                   />
+                  {error && <p className="text-red-700"> {error}</p>}
                   {url && (
                     <button
                       type="submit"
