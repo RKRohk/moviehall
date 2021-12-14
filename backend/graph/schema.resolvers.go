@@ -15,10 +15,6 @@ import (
 )
 
 func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput) (*model.Room, error) {
-	r.mu.Lock()
-
-	defer r.mu.Unlock()
-
 	user := utils.UserFromContext(ctx)
 
 	if user == nil {
