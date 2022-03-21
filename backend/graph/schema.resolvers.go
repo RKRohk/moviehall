@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/rkrohk/moviehall/graph/generated"
@@ -222,7 +223,6 @@ func (r *mutationResolver) Join(ctx context.Context, roomCode string) (*bool, er
 	}
 
 	return &ret, nil
-
 }
 
 func (r *mutationResolver) Leave(ctx context.Context, roomCode string, userID string) (*bool, error) {
@@ -244,12 +244,14 @@ func (r *queryResolver) Room(ctx context.Context, code string) (*model.Room, err
 	return nil, fmt.Errorf("Room %s not found", code)
 }
 
-func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<-chan *model.Action, error) {
+func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string, userName string) (<-chan *model.Action, error) {
 	room := r.Rooms[roomCode]
 
 	if room == nil {
 		return nil, fmt.Errorf("roomcode %s does not exist", roomCode)
 	}
+
+	user := utils.UserFromContext(ctx)
 
 	//Start using Firebase Token ID or something later
 	userID := utils.RandomString(10)
@@ -263,7 +265,14 @@ func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<
 
 	go func() {
 		<-ctx.Done()
+		userLeaveAction := resolverutils.NewAction(user, fmt.Sprintf("%s has left the room", userName), model.ActionTypeUserJoin, nil)
+
 		r.mu.Lock()
+		for _, observer := range room.MessageObservers {
+			observer.Action <- userLeaveAction
+		}
+		r.addActionToRoom(room, userLeaveAction)
+		log.Printf("User %v left", user)
 		delete(room.MessageObservers, userID)
 		r.mu.Unlock()
 	}()

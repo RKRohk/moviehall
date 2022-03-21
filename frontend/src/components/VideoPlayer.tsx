@@ -48,6 +48,9 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({
 
   const myUserId = auth.currentUser?.uid;
 
+  const userName =
+    auth.currentUser?.displayName ?? auth.currentUser?.email ?? "Not Logged In";
+
   const ref = useRef<any>(null);
 
   const { data, error, loading } = useQuery<GetOwner, GetOwnerVariables>(
@@ -72,7 +75,7 @@ const VideoPlayer: React.VFC<VideoPlayerProps> = ({
   useSubscription<SubscribeToAction, SubscribeToActionVariables>(
     SUBSCRIBE_TO_ACTION,
     {
-      variables: { roomCode },
+      variables: { roomCode, userName },
       skip: amIOwner,
       onSubscriptionData: (data) => {
         const videoElement = ref.current?.videoElement;

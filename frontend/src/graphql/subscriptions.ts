@@ -1,7 +1,7 @@
 import {gql} from '@apollo/client'
 export const SUBSCRIBE_TO_ACTION = gql`
-subscription SubscribeToAction($roomCode:String!){
-  messages(roomCode:$roomCode) {
+subscription SubscribeToAction($roomCode:String!,$userName:String!){
+  messages(roomCode:$roomCode,userName:$userName) {
     id
     payload
     createdBy{

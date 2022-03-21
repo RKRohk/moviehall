@@ -87,7 +87,7 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		Messages   func(childComplexity int, roomCode string) int
+		Messages   func(childComplexity int, roomCode string, userName string) int
 		Timeupdate func(childComplexity int, roomCode string) int
 	}
 
@@ -113,7 +113,7 @@ type QueryResolver interface {
 	Room(ctx context.Context, code string) (*model.Room, error)
 }
 type SubscriptionResolver interface {
-	Messages(ctx context.Context, roomCode string) (<-chan *model.Action, error)
+	Messages(ctx context.Context, roomCode string, userName string) (<-chan *model.Action, error)
 	Timeupdate(ctx context.Context, roomCode string) (<-chan int, error)
 }
 
@@ -362,7 +362,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Subscription.Messages(childComplexity, args["roomCode"].(string)), true
+		return e.complexity.Subscription.Messages(childComplexity, args["roomCode"].(string), args["userName"].(string)), true
 
 	case "Subscription.timeupdate":
 		if e.complexity.Subscription.Timeupdate == nil {
@@ -547,7 +547,7 @@ type Mutation {
 }
 
 type Subscription {
-  messages(roomCode: String!): Action!
+  messages(roomCode: String!,userName: String!): Action!
   timeupdate(roomCode: String!): Int!
 }
 `, BuiltIn: false},
@@ -756,6 +756,15 @@ func (ec *executionContext) field_Subscription_messages_args(ctx context.Context
 		}
 	}
 	args["roomCode"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["userName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userName"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userName"] = arg1
 	return args, nil
 }
 
@@ -771,6 +780,21 @@ func (ec *executionContext) field_Subscription_timeupdate_args(ctx context.Conte
 		}
 	}
 	args["roomCode"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field___Field_args_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *bool
+	if tmp, ok := rawArgs["includeDeprecated"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
+		arg0, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["includeDeprecated"] = arg0
 	return args, nil
 }
 
@@ -1819,7 +1843,7 @@ func (ec *executionContext) _Subscription_messages(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Subscription().Messages(rctx, args["roomCode"].(string))
+		return ec.resolvers.Subscription().Messages(rctx, args["roomCode"].(string), args["userName"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2392,6 +2416,13 @@ func (ec *executionContext) ___Field_args(ctx context.Context, field graphql.Col
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field___Field_args_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Args, nil

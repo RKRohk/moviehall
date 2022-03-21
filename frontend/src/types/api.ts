@@ -280,6 +280,7 @@ export interface SubscribeToAction {
 
 export interface SubscribeToActionVariables {
   roomCode: string;
+  userName: string;
 }
 
 /* tslint:disable */

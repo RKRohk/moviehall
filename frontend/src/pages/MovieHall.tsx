@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { Transition } from "@headlessui/react";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useContext, useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 import ChatSection from "../components/ChatSection";
 import EnterRoom from "../components/EnterRoom";
-import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
+import { FirebaseContext } from "../context/firebaseContext";
 import { JOIN_ROOM } from "../graphql/mutations";
 import { GET_MESSAGES_QUERY, URL_QUERY } from "../graphql/queries";
 import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
@@ -15,6 +15,7 @@ import {
   MediaUrl,
   MediaUrlVariables,
   SubscribeToAction,
+  SubscribeToActionVariables,
   userJoinedRoom,
   userJoinedRoomVariables,
 } from "../types/api";
@@ -23,6 +24,10 @@ const MovieHall = () => {
   const [chatVisibility, setChatVisibility] = useState(false);
 
   const { roomCode } = useParams<{ roomCode: string }>();
+
+  const { auth } = useContext(FirebaseContext);
+  const currentUserName =
+    auth.currentUser?.displayName ?? auth.currentUser?.email ?? "Not Logged In";
 
   const toggleVisibility = () => {
     setUnread(0);
@@ -41,9 +46,9 @@ const MovieHall = () => {
   });
 
   const subscribeToMessages = () =>
-    subscribeToMore<SubscribeToAction>({
+    subscribeToMore<SubscribeToAction, SubscribeToActionVariables>({
       document: SUBSCRIBE_TO_ACTION,
-      variables: { roomCode: roomCode },
+      variables: { roomCode: roomCode, userName: currentUserName },
       updateQuery: (prev, { subscriptionData }): GetMessages => {
         addUnread();
         if (!subscriptionData.data) return prev;

@@ -67,6 +67,6 @@ type Mutation {
 }
 
 type Subscription {
-  messages(roomCode: String!): Action!
+  messages(roomCode: String!,userName: String!): Action!
   timeupdate(roomCode: String!): Int!
 }
