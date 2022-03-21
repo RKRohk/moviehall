@@ -49,10 +49,6 @@ func WsAuthMiddleware(auth *auth.Client) func(ctx context.Context, initPayload t
 		// fmt.Println(initPayload)
 		header := initPayload.GetString("Auth")
 
-		if len(header) == 0 {
-			return ctx, nil
-		}
-
 		// fmt.Println(header)
 		bearerToken := header
 		bearerToken = strings.Replace(bearerToken, "Bearer", "", 1)

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { Transition } from "@headlessui/react";
+import produce from "immer";
 import { Fragment, useContext, useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 import ChatSection from "../components/ChatSection";
@@ -49,18 +50,12 @@ const MovieHall = () => {
     subscribeToMore<SubscribeToAction, SubscribeToActionVariables>({
       document: SUBSCRIBE_TO_ACTION,
       variables: { roomCode: roomCode, userName: currentUserName },
-      updateQuery: (prev, { subscriptionData }): GetMessages => {
-        addUnread();
-        if (!subscriptionData.data) return prev;
-        if (!subscriptionData.data.messages.id) return prev;
-        const newMessage = subscriptionData.data;
-        console.log(subscriptionData.data);
-        return Object.assign({}, prev, {
-          room: {
-            actions: [newMessage.messages, ...(prev.room?.actions ?? [])],
-          },
-        });
-      },
+      updateQuery: produce((prev, { subscriptionData }) => {
+        addUnread(); // show the notification that a new message arrived
+        if (subscriptionData.data && subscriptionData.data.messages.id) {
+          prev.room?.actions.push(subscriptionData.data.messages);
+        }
+      }),
     });
 
   const [sendUserJoinedMessage] = useMutation<

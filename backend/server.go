@@ -11,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"github.com/rkrohk/moviehall/graph"
@@ -53,6 +54,7 @@ func main() {
 	srv.Use(extension.Introspection{})
 
 	router := chi.NewRouter()
+	router.Use(middleware.Logger)
 	if auth == nil {
 		log.Fatal("Auth is nil") // Die if you can't get authentication running
 	}

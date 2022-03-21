@@ -253,6 +253,11 @@ func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string, us
 
 	user := utils.UserFromContext(ctx)
 
+	if user == nil {
+		log.Println("user not found")
+		return nil, fmt.Errorf("user not logged in")
+	}
+
 	//Start using Firebase Token ID or something later
 	userID := utils.RandomString(10)
 
