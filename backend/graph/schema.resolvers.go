@@ -6,35 +6,25 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/rkrohk/moviehall/graph/generated"
 	"github.com/rkrohk/moviehall/graph/model"
+	"github.com/rkrohk/moviehall/resolverutils"
 	"github.com/rkrohk/moviehall/utils"
 )
 
 func (r *mutationResolver) CreateRoom(ctx context.Context, uri model.MediaInput) (*model.Room, error) {
-	r.mu.Lock()
-
-	defer r.mu.Unlock()
-
 	user := utils.UserFromContext(ctx)
 
 	if user == nil {
 		return nil, fmt.Errorf("user is not authenticated")
 	}
 
-	roomCode := utils.RandomString(8)
-	newRoom := &model.Room{
-		ID:                 roomCode,
-		Code:               roomCode,
-		Media:              &model.Media{URI: uri.URI},
-		MessageObservers:   make(map[string]struct{ Action chan *model.Action }),
-		Timestamp:          0,
-		TimeStampObservers: map[string]struct{ Timestamp chan int }{},
-		Owner:              user,
-	}
-	r.Rooms[roomCode] = newRoom
+	newRoom := resolverutils.NewRoom(user, uri.URI)
+
+	r.addRoom(newRoom)
 
 	return newRoom, nil
 }
@@ -60,24 +50,12 @@ func (r *mutationResolver) SendMessage(ctx context.Context, roomCode string, mes
 		return nil, fmt.Errorf("user is not authenticated")
 	}
 
-	newMessage := &model.Action{
-		ID:         utils.RandomString(16),
-		CreatedBy:  user,
-		CreatedAt:  time.Now(),
-		Payload:    message,
-		ActionType: model.ActionTypeMessage,
-	}
+	newMessage := resolverutils.NewAction(user, message, model.ActionTypeMessage, nil)
 
-	room.Actions = append(room.Actions, newMessage)
+	r.addActionToRoom(room, newMessage)
 
 	//Sending the new message to every user in the room
 	for _, observer := range room.MessageObservers {
-
-		//Runs a goroutine to send message to every listener.
-		//This was done to reduce the time taken to get the message back to the sender
-		// go func(localObserver *struct{ Action chan *model.Action }) {
-		// 	localObserver.Action <- newMessage
-		// }(&observer)
 
 		observer.Action <- newMessage
 	}
@@ -146,15 +124,9 @@ func (r *mutationResolver) Play(ctx context.Context, roomCode string) (*bool, er
 		return nil, fmt.Errorf("user is not room owner")
 	}
 
-	newAction := &model.Action{
-		ID:         utils.RandomString(10),
-		CreatedBy:  user,
-		CreatedAt:  time.Now(),
-		Payload:    fmt.Sprintf("%s played the video", user.Name),
-		ActionType: model.ActionTypePlay,
-	}
+	newAction := resolverutils.NewAction(user, fmt.Sprintf("%s played the video", user.Name), model.ActionTypePlay, nil)
 
-	room.Actions = append(room.Actions, newAction)
+	r.addActionToRoom(room, newAction)
 
 	//Sending the new pause action to every user in the room
 	for _, observer := range room.MessageObservers {
@@ -186,16 +158,9 @@ func (r *mutationResolver) Seek(ctx context.Context, roomCode string, timeStamp 
 		return nil, fmt.Errorf("user is not room owner")
 	}
 
-	newAction := &model.Action{
-		ID:              utils.RandomString(10),
-		CreatedBy:       user,
-		CreatedAt:       time.Now(),
-		Payload:         fmt.Sprintf("%s seeked the video", user.Name),
-		ActionType:      model.ActionTypeSeek,
-		ActionTimeStamp: &timeStamp,
-	}
+	newAction := resolverutils.NewAction(user, fmt.Sprintf("%s seeked the video", user.Name), model.ActionTypeSeek, &timeStamp)
 
-	room.Actions = append(room.Actions, newAction)
+	r.addActionToRoom(room, newAction)
 
 	//Sending the new pause action to every user in the room
 	for _, observer := range room.MessageObservers {
@@ -207,7 +172,6 @@ func (r *mutationResolver) Seek(ctx context.Context, roomCode string, timeStamp 
 }
 
 func (r *mutationResolver) Update(ctx context.Context, roomCode string, timeStamp int) (*bool, error) {
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -233,7 +197,36 @@ func (r *mutationResolver) Update(ctx context.Context, roomCode string, timeStam
 	}
 
 	return &ret, nil
+}
 
+func (r *mutationResolver) Join(ctx context.Context, roomCode string) (*bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	room := r.Rooms[roomCode]
+	if room == nil {
+		return nil, fmt.Errorf("roomcode %s not found", roomCode)
+	}
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		return nil, fmt.Errorf("user is not authenticated")
+	}
+
+	userJoinedAction := resolverutils.NewAction(user, fmt.Sprintf("%s joined the room", user.Name), model.ActionTypeUserJoin, nil)
+
+	r.addActionToRoom(room, userJoinedAction)
+
+	for _, observer := range room.MessageObservers {
+		observer.Action <- userJoinedAction
+	}
+
+	return &ret, nil
+}
+
+func (r *mutationResolver) Leave(ctx context.Context, roomCode string, userID string) (*bool, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) Media(ctx context.Context) ([]*model.Media, error) {
@@ -251,11 +244,18 @@ func (r *queryResolver) Room(ctx context.Context, code string) (*model.Room, err
 	return nil, fmt.Errorf("Room %s not found", code)
 }
 
-func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<-chan *model.Action, error) {
+func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string, userName string) (<-chan *model.Action, error) {
 	room := r.Rooms[roomCode]
 
 	if room == nil {
 		return nil, fmt.Errorf("roomcode %s does not exist", roomCode)
+	}
+
+	user := utils.UserFromContext(ctx)
+
+	if user == nil {
+		log.Println("user not found")
+		return nil, fmt.Errorf("user not logged in")
 	}
 
 	//Start using Firebase Token ID or something later
@@ -270,7 +270,14 @@ func (r *subscriptionResolver) Messages(ctx context.Context, roomCode string) (<
 
 	go func() {
 		<-ctx.Done()
+		userLeaveAction := resolverutils.NewAction(user, fmt.Sprintf("%s has left the room", userName), model.ActionTypeUserJoin, nil)
+
 		r.mu.Lock()
+		for _, observer := range room.MessageObservers {
+			observer.Action <- userLeaveAction
+		}
+		r.addActionToRoom(room, userLeaveAction)
+		log.Printf("User %v left", user)
 		delete(room.MessageObservers, userID)
 		r.mu.Unlock()
 	}()

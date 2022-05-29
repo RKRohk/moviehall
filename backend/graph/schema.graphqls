@@ -36,6 +36,8 @@ enum ActionType {
   PLAY
   SEEK
   UPDATE
+  USER_JOIN
+  USER_LEAVE
 }
 
 type User {
@@ -60,9 +62,11 @@ type Mutation {
   play(roomCode: String!): Boolean
   seek(roomCode: String!, timeStamp: Int!): Boolean
   update(roomCode: String!, timeStamp: Int!): Boolean
+  join(roomCode: String!): Boolean
+  leave(roomCode: String!, userID: String!): Boolean
 }
 
 type Subscription {
-  messages(roomCode: String!): Action!
+  messages(roomCode: String!,userName: String!): Action!
   timeupdate(roomCode: String!): Int!
 }

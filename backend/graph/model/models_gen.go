@@ -36,12 +36,14 @@ type User struct {
 type ActionType string
 
 const (
-	ActionTypeMessage ActionType = "MESSAGE"
-	ActionTypeTyping  ActionType = "TYPING"
-	ActionTypePause   ActionType = "PAUSE"
-	ActionTypePlay    ActionType = "PLAY"
-	ActionTypeSeek    ActionType = "SEEK"
-	ActionTypeUpdate  ActionType = "UPDATE"
+	ActionTypeMessage   ActionType = "MESSAGE"
+	ActionTypeTyping    ActionType = "TYPING"
+	ActionTypePause     ActionType = "PAUSE"
+	ActionTypePlay      ActionType = "PLAY"
+	ActionTypeSeek      ActionType = "SEEK"
+	ActionTypeUpdate    ActionType = "UPDATE"
+	ActionTypeUserJoin  ActionType = "USER_JOIN"
+	ActionTypeUserLeave ActionType = "USER_LEAVE"
 )
 
 var AllActionType = []ActionType{
@@ -51,11 +53,13 @@ var AllActionType = []ActionType{
 	ActionTypePlay,
 	ActionTypeSeek,
 	ActionTypeUpdate,
+	ActionTypeUserJoin,
+	ActionTypeUserLeave,
 }
 
 func (e ActionType) IsValid() bool {
 	switch e {
-	case ActionTypeMessage, ActionTypeTyping, ActionTypePause, ActionTypePlay, ActionTypeSeek, ActionTypeUpdate:
+	case ActionTypeMessage, ActionTypeTyping, ActionTypePause, ActionTypePlay, ActionTypeSeek, ActionTypeUpdate, ActionTypeUserJoin, ActionTypeUserLeave:
 		return true
 	}
 	return false

@@ -1,11 +1,13 @@
-import { useQuery, useSubscription } from "@apollo/client";
+import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import { Transition } from "@headlessui/react";
-import { Fragment, useEffect, useState } from "react";
+import produce from "immer";
+import { Fragment, useContext, useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 import ChatSection from "../components/ChatSection";
 import EnterRoom from "../components/EnterRoom";
-import MessageAlert from "../components/MessagAlert";
 import VideoPlayer from "../components/VideoPlayer";
+import { FirebaseContext } from "../context/firebaseContext";
+import { JOIN_ROOM } from "../graphql/mutations";
 import { GET_MESSAGES_QUERY, URL_QUERY } from "../graphql/queries";
 import { SUBSCRIBE_TO_ACTION } from "../graphql/subscriptions";
 import {
@@ -14,12 +16,19 @@ import {
   MediaUrl,
   MediaUrlVariables,
   SubscribeToAction,
+  SubscribeToActionVariables,
+  userJoinedRoom,
+  userJoinedRoomVariables,
 } from "../types/api";
 
 const MovieHall = () => {
   const [chatVisibility, setChatVisibility] = useState(false);
 
   const { roomCode } = useParams<{ roomCode: string }>();
+
+  const { auth } = useContext(FirebaseContext);
+  const currentUserName =
+    auth.currentUser?.displayName ?? auth.currentUser?.email ?? "Not Logged In";
 
   const toggleVisibility = () => {
     setUnread(0);
@@ -38,25 +47,27 @@ const MovieHall = () => {
   });
 
   const subscribeToMessages = () =>
-    subscribeToMore<SubscribeToAction>({
+    subscribeToMore<SubscribeToAction, SubscribeToActionVariables>({
       document: SUBSCRIBE_TO_ACTION,
-      variables: { roomCode: roomCode },
-      updateQuery: (prev, { subscriptionData }): GetMessages => {
-        addUnread();
-        if (!subscriptionData.data) return prev;
-        if (!subscriptionData.data.messages.id) return prev;
-        const newMessage = subscriptionData.data;
-        console.log(subscriptionData.data);
-        return Object.assign({}, prev, {
-          room: {
-            actions: [newMessage.messages, ...(prev.room?.actions ?? [])],
-          },
-        });
-      },
+      variables: { roomCode: roomCode, userName: currentUserName },
+      updateQuery: produce((prev, { subscriptionData }) => {
+        addUnread(); // show the notification that a new message arrived
+        if (subscriptionData.data && subscriptionData.data.messages.id) {
+          prev.room?.actions.push(subscriptionData.data.messages);
+        }
+      }),
     });
+
+  const [sendUserJoinedMessage] = useMutation<
+    userJoinedRoom,
+    userJoinedRoomVariables
+  >(JOIN_ROOM, {
+    variables: { roomCode: roomCode },
+  });
 
   useEffect(() => {
     subscribeToMessages();
+    sendUserJoinedMessage();
   }, []);
 
   const history = useHistory();
