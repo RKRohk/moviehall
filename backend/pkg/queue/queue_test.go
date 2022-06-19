@@ -2,52 +2,54 @@ package queue
 
 import (
 	"log"
+	"sync"
 	"testing"
-	"time"
-
-	"github.com/rabbitmq/amqp091-go"
 )
 
-func TestMessageSent(t *testing.T) {
-	conn := NewPublisher(&QueueConfig{URI: "amqp://guest:guest@rabbitmq:5672/"})
-	defer conn.Close()
+var config = &QueueConfig{
+	URI:       "amqp://guest:guest@rabbitmq:5672/",
+	QueueName: "queue_test",
+}
 
-	channel, err := conn.Channel()
+func TestMessageSentIntegrationTest(t *testing.T) {
+
+	connection := NewConnection(config)
+	channel, err := connection.Channel()
 	if err != nil {
-		log.Printf("Error opening channel %v", err)
+		log.Println("Error creating channel ", err)
 		t.Fail()
 	}
 
-	q, _ := channel.QueueDeclare(
-		"test", // name
-		false,  // durable
-		false,  // delete when unused
-		false,  // exclusive
-		false,  // no-wait
-		nil,    // arguments
-	)
-	defer channel.Close()
-
-	receive, err := channel.Consume(q.Name, "consumer1", false, false, false, false, nil)
+	//Purge queue before testing
+	_, err = channel.QueueDelete(config.QueueName, false, false, false)
 	if err != nil {
-		log.Printf("Error subscribing to queue %v", err)
+		log.Printf("Error deleting queue %v\n", err)
 		t.Fail()
 	}
-	go (func() {
-		for message := range receive {
-			log.Printf("Received message %s", message.Body)
-			message.Ack(false)
+
+	var wg sync.WaitGroup
+	publisher := NewPublisher(config)
+	consumer, err := channel.Consume(publisher.queue.Name, "queue_test_consumer", false, false, false, false, nil)
+	if err != nil {
+		log.Printf("Error creating consumer for channel %v: error %v\n", publisher.queue.Name, err)
+		t.Fail()
+	}
+
+	//Create subscriber
+	go func() {
+		for message := range consumer {
+			log.Printf("Received message %v\n", message)
+			wg.Done()
 		}
-	})()
+	}()
 
-	err = channel.Publish("", q.Name, false, false, amqp091.Publishing{
-		ContentType: "text/plain",
-		Body:        []byte("HELLO WORLD"),
-	})
-	if err != nil {
-		log.Printf("Failed to send message due to error %v", err)
-	} else {
-		log.Printf("Sent message\n")
+	messages := []string{"Hi", "User", "How", "Are", "You", "?"}
+
+	for _, message := range messages {
+		publisher.Publish(message)
+		log.Println("Published message ", message, " to queue", publisher.queue.Name)
+		wg.Add(1)
 	}
-	<-time.After(1000 * time.Millisecond)
+
+	wg.Wait()
 }
