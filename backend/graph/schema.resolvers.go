@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
@@ -231,7 +232,19 @@ func (r *mutationResolver) Leave(ctx context.Context, roomCode string, userID st
 }
 
 func (r *mutationResolver) UploadFile(ctx context.Context, file graphql.Upload) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+	user := utils.UserFromContext(ctx)
+	if user == nil {
+		return false, fmt.Errorf("user is not authenticated ")
+	}
+	fileBytes, err := ioutil.ReadAll(file.File)
+	if err != nil {
+		return false, fmt.Errorf("error reading file, please give a valid file: %v", err)
+	}
+	if err = ioutil.WriteFile(file.Filename, fileBytes, 0644); err != nil {
+		return false, fmt.Errorf("error saving file: %v", err)
+	}
+
+	return true, nil
 }
 
 func (r *queryResolver) Media(ctx context.Context) ([]*model.Media, error) {

@@ -15,10 +15,9 @@ type Publisher interface {
 
 type RabbitMQPublisher struct {
 	channel *amqp.Channel
-	queue   *amqp.Queue
 }
 
-func NewConnection(config *QueueConfig) *amqp.Connection {
+func NewConnection(config *ConnectionConfig) *amqp.Connection {
 	conn, err := amqp.Dial(config.URI)
 	if err != nil {
 		log.Fatalf("Error creating connection %v", err)
@@ -26,33 +25,29 @@ func NewConnection(config *QueueConfig) *amqp.Connection {
 	return conn
 }
 
-func NewPublisher(config *QueueConfig) *RabbitMQPublisher {
-	conn := NewConnection(config)
-
+func NewChannel(conn *amqp.Connection) *amqp.Channel {
 	channel, err := conn.Channel()
 	if err != nil {
 		log.Panicf("Error opening channel %v", err)
 	}
+	return channel
+}
 
-	queue, err := channel.QueueDeclare(config.QueueName, true, false, false, false, nil)
-	if err != nil {
-		log.Panicf("Could not declare queue %v: error: %v", config.QueueName, err)
-	}
+func NewPublisher(channel *amqp.Channel) *RabbitMQPublisher {
 
 	return &RabbitMQPublisher{
-		queue:   &queue,
 		channel: channel,
 	}
 
 }
 
-func (publisher RabbitMQPublisher) Publish(message interface{}) error {
+func (publisher RabbitMQPublisher) Publish(message interface{}, queue *amqp.Queue) error {
 	body, err := json.Marshal(message)
 	if err != nil {
 		log.Printf("Failed to convert message %v to byte array: error: %v", message, err)
 		return err
 	}
-	err = publisher.channel.Publish("", publisher.queue.Name, false, false, amqp.Publishing{
+	err = publisher.channel.Publish("", queue.Name, false, false, amqp.Publishing{
 		Body: body,
 	})
 	return err

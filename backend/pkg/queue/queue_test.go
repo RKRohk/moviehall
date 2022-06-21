@@ -6,32 +6,29 @@ import (
 	"testing"
 )
 
-var config = &QueueConfig{
-	URI:       "amqp://guest:guest@rabbitmq:5672/",
-	QueueName: "queue_test",
+var config = &ConnectionConfig{
+	URI: "amqp://guest:guest@rabbitmq:5672/",
 }
 
 func TestMessageSentIntegrationTest(t *testing.T) {
 
 	connection := NewConnection(config)
-	channel, err := connection.Channel()
-	if err != nil {
-		log.Println("Error creating channel ", err)
-		t.Fail()
-	}
+	channel := NewChannel(connection)
 
 	//Purge queue before testing
-	_, err = channel.QueueDelete(config.QueueName, false, false, false)
+	_, err := channel.QueueDelete("queue_test", false, false, false)
 	if err != nil {
 		log.Printf("Error deleting queue %v\n", err)
 		t.Fail()
 	}
 
 	var wg sync.WaitGroup
-	publisher := NewPublisher(config)
-	consumer, err := channel.Consume(publisher.queue.Name, "queue_test_consumer", false, false, false, false, nil)
+	queue := NewQueue(channel, "queue_test")
+
+	publisher := NewPublisher(channel)
+	consumer, err := channel.Consume("queue_test", "queue_test_consumer", false, false, false, false, nil)
 	if err != nil {
-		log.Printf("Error creating consumer for channel %v: error %v\n", publisher.queue.Name, err)
+		log.Printf("Error creating consumer for channel %v: error %v\n", "queue_test", err)
 		t.Fail()
 	}
 
@@ -46,8 +43,8 @@ func TestMessageSentIntegrationTest(t *testing.T) {
 	messages := []string{"Hi", "User", "How", "Are", "You", "?"}
 
 	for _, message := range messages {
-		publisher.Publish(message)
-		log.Println("Published message ", message, " to queue", publisher.queue.Name)
+		publisher.Publish(message, queue)
+		log.Println("Published message ", message, " to queue", "queue_test")
 		wg.Add(1)
 	}
 
