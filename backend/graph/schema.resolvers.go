@@ -9,6 +9,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/rkrohk/moviehall/graph/generated"
 	"github.com/rkrohk/moviehall/graph/model"
 	"github.com/rkrohk/moviehall/resolverutils"
@@ -226,6 +227,10 @@ func (r *mutationResolver) Join(ctx context.Context, roomCode string) (*bool, er
 }
 
 func (r *mutationResolver) Leave(ctx context.Context, roomCode string, userID string) (*bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) UploadFile(ctx context.Context, file graphql.Upload) (bool, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

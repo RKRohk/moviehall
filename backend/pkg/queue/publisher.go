@@ -1,5 +1,7 @@
 package queue
 
+//go:generate mockgen -destination mock_queue_test.go -package queue_test . RabbitMQPublisher,Publisher
+
 import (
 	"encoding/json"
 	"log"
