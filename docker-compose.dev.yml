@@ -11,3 +11,12 @@ services:
       context: ./
       dockerfile: ./Dockerfile.dev
     command: /bin/sh -c "while sleep 1000; do :; done"
+
+  nginx:
+    build:
+      context: ./nginx-vod
+    volumes:
+      - "./video:/video:ro"
+    
+    ports:
+      - "8080:80"

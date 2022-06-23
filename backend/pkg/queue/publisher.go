@@ -10,7 +10,7 @@ import (
 )
 
 type Publisher interface {
-	Publish(message interface{}) error
+	Publish(message interface{}, queue_name string) error
 }
 
 type RabbitMQPublisher struct {
@@ -41,12 +41,15 @@ func NewPublisher(channel *amqp.Channel) *RabbitMQPublisher {
 
 }
 
-func (publisher RabbitMQPublisher) Publish(message interface{}, queue *amqp.Queue) error {
+func (publisher RabbitMQPublisher) Publish(message interface{}, queue_name string) error {
 	body, err := json.Marshal(message)
 	if err != nil {
 		log.Printf("Failed to convert message %v to byte array: error: %v", message, err)
 		return err
 	}
+
+	queue := NewQueue(publisher.channel, queue_name)
+
 	err = publisher.channel.Publish("", queue.Name, false, false, amqp.Publishing{
 		Body: body,
 	})
