@@ -20,6 +20,7 @@ require (
 require (
 	firebase.google.com/go/v4 v4.8.0
 	github.com/go-chi/chi v1.5.4
+	github.com/google/wire v0.5.0
 	github.com/rkrohk/moviehall/pkg v0.0.0-00010101000000-000000000000
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

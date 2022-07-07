@@ -30,7 +30,7 @@ func TestConsumer(t *testing.T) {
 		wg.Add(1)
 	}
 
-	consumer := NewConsumer(channel)
+	var consumer Consumer = NewConsumer(channel)
 
 	messageChan, err := consumer.Consume(TEST_QUEUE_NAME, "consumer_tester")
 
@@ -41,7 +41,7 @@ func TestConsumer(t *testing.T) {
 	//Create subscriber
 	go func() {
 		for message := range messageChan {
-			log.Printf("Received message %v\n", message)
+			log.Printf("Received message %v\n", string(message.Body()))
 			wg.Done()
 		}
 	}()
