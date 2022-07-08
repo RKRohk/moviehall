@@ -8,7 +8,7 @@ RUN go mod download
 COPY backend/. ./
 RUN go build
 
-FROM node:latest as web_build
+FROM node:16-alpine as web_build
 WORKDIR /app
 COPY frontend/package.json .
 COPY frontend/yarn.lock .
