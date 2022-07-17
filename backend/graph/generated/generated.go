@@ -43,6 +43,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	Secure func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -493,7 +494,9 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var sources = []*ast.Source{
 	{Name: "graph/schema.graphqls", Input: `scalar Time
-scalar Upload 
+scalar Upload
+
+directive @secure on FIELD_DEFINITION
 
 enum Role {
   ADMIN
@@ -563,7 +566,7 @@ type Mutation {
 }
 
 type Subscription {
-  messages(roomCode: String!,userName: String!): Action!
+  messages(roomCode: String!, userName: String!): Action!
   timeupdate(roomCode: String!): Int!
 }
 `, BuiltIn: false},

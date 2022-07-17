@@ -1,4 +1,4 @@
-import {gql} from "@apollo/client"
+import { gql } from "@apollo/client"
 export const SEND_MESSAGE_MUTATION = gql`
     mutation sendMessage($roomCode:String!,$message:String!){
         sendMessage(roomCode:$roomCode,message:$message){
@@ -42,5 +42,11 @@ export const UPDATE_TIMESTAMP = gql`
 export const JOIN_ROOM = gql`
     mutation userJoinedRoom($roomCode:String!){
         join(roomCode:$roomCode)
+    }
+`
+
+export const UPLOAD_FILE = gql`
+    mutation uploadFile($file: Upload!){
+        uploadFile(file:$file)
     }
 `

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
@@ -36,7 +39,16 @@ func main() {
 
 	publisher := provider.NewPublisher(&queue.ConnectionConfig{URI: "amqp://guest:guest@rabbitmq:5672/"})
 
-	newExecutableSchema := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{Rooms: map[string]*model.Room{}, Auth: auth, Publisher: publisher}})
+	newExecutableSchema := generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{Rooms: map[string]*model.Room{}, Auth: auth, Publisher: publisher}, Directives: generated.DirectiveRoot{Secure: func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error) {
+		user := utils.UserFromContext(ctx)
+
+		if user == nil {
+			log.Println("user not found")
+			return nil, fmt.Errorf("user not logged in")
+		}
+
+		return next(ctx)
+	}}})
 
 	srv := handler.New(newExecutableSchema)
 
@@ -45,7 +57,9 @@ func main() {
 
 	srv.AddTransport(transport.GET{})
 
-	srv.AddTransport(transport.MultipartForm{})
+	srv.AddTransport(transport.MultipartForm{
+		MaxUploadSize: 1024 * 1024 * 10,
+	})
 
 	srv.AddTransport(transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,

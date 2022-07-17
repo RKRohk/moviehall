@@ -17,3 +17,12 @@ func NewConsumer(config *queue.ConnectionConfig) queue.Consumer {
 	rabbitMQConsumer := queue.NewConsumer(channel)
 	return rabbitMQConsumer
 }
+
+// Injectors from publisher.go:
+
+func NewPublisher(config *queue.ConnectionConfig) queue.Publisher {
+	connection := queue.NewConnection(config)
+	channel := queue.NewChannel(connection)
+	rabbitMQPublisher := queue.NewPublisher(channel)
+	return rabbitMQPublisher
+}

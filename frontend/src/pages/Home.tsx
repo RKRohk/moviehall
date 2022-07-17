@@ -30,6 +30,10 @@ const Home: React.FC = () => {
     }
   };
 
+  const navigateToUpload = () => {
+    history.push("/upload");
+  };
+
   return (
     <div>
       <NavBar />
@@ -74,6 +78,16 @@ const Home: React.FC = () => {
                 </form>
               </div>
               {/* <p className="font-bold">Create a room ??</p> */}
+              <div>Or</div>
+              <div>
+                <button
+                  onClick={navigateToUpload}
+                  className="w-full px-4 py-2 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-200 transform bg-indigo-500 rounded-lg lg:w-auto lg:mx-4 hover:bg-indigo-400 focus:outline-none focus:bg-indigo-400"
+                >
+                  Upload
+                </button>
+                your own movie
+              </div>
             </div>
           </div>
           <div className="md:w-1/2 lg:px-8 px-2 md:pt-0 pt-6">

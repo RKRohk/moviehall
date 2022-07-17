@@ -6,6 +6,7 @@ import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { FirebaseContext } from "./context/firebaseContext";
 import Login from "./pages/Login";
 import MovieHall from "./pages/MovieHall";
+import createUploadLink from "apollo-upload-client/public/createUploadLink.js";
 import {
   ApolloClient,
   ApolloLink,
@@ -19,6 +20,8 @@ import { WebSocketLink } from "@apollo/client/link/ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { auth } from "./config/firebaseConfig";
 import { setContext } from "@apollo/client/link/context";
+import Upload from "./pages/Upload";
+import { url } from "inspector";
 const httpLink = new HttpLink({
   uri: "/query",
 });
@@ -67,7 +70,19 @@ const authLink = setContext(async (_, { headers }) => {
 function createClient() {}
 
 const client = new ApolloClient({
-  link: authLink.concat(splitLink),
+  // link: authLink.concat(splitLink).concat(createUploadLink()),
+  link: createUploadLink({
+    uri: "/query",
+    fetch: async (input, init) => {
+      const token = await auth.currentUser?.getIdToken();
+      if (init) {
+        init.headers = { ...init?.headers, Auth: `Bearer ${token}` };
+      }
+      return fetch(input, init);
+    },
+  })
+    .concat(authLink)
+    .concat(splitLink),
   cache: new InMemoryCache(),
   connectToDevTools: true,
 });
@@ -95,6 +110,9 @@ function App() {
           </Route>
           <Route path="/room/:roomCode">
             {signedIn ? <MovieHall /> : <Login />}
+          </Route>
+          <Route path="/upload">
+            <Upload />
           </Route>
           <Route path="/">
             <Home />
