@@ -1,4 +1,7 @@
 scalar Time
+scalar Upload
+
+directive @secure on FIELD_DEFINITION
 
 enum Role {
   ADMIN
@@ -64,9 +67,10 @@ type Mutation {
   update(roomCode: String!, timeStamp: Int!): Boolean
   join(roomCode: String!): Boolean
   leave(roomCode: String!, userID: String!): Boolean
+  uploadFile(file: Upload!): Boolean!
 }
 
 type Subscription {
-  messages(roomCode: String!,userName: String!): Action!
+  messages(roomCode: String!, userName: String!): Action!
   timeupdate(roomCode: String!): Int!
 }

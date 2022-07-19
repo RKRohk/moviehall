@@ -6,11 +6,15 @@ package graph
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/rkrohk/moviehall/graph/generated"
 	"github.com/rkrohk/moviehall/graph/model"
+	messaging_model "github.com/rkrohk/moviehall/pkg/model"
 	"github.com/rkrohk/moviehall/resolverutils"
 	"github.com/rkrohk/moviehall/utils"
 )
@@ -227,6 +231,33 @@ func (r *mutationResolver) Join(ctx context.Context, roomCode string) (*bool, er
 
 func (r *mutationResolver) Leave(ctx context.Context, roomCode string, userID string) (*bool, error) {
 	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) UploadFile(ctx context.Context, file graphql.Upload) (bool, error) {
+	user := utils.UserFromContext(ctx)
+	if user == nil {
+		return false, fmt.Errorf("user is not authenticated ")
+	}
+	fileBytes, err := ioutil.ReadAll(file.File)
+	if err != nil {
+		return false, fmt.Errorf("error reading file, please give a valid file: %v", err)
+	}
+	filePath := path.Join("..", "video", file.Filename)
+	if err = ioutil.WriteFile(filePath, fileBytes, 0644); err != nil {
+		return false, fmt.Errorf("error saving file: %v", err)
+	}
+	payload := &messaging_model.MediaAddedEvent{
+		UserID:    user.ID,
+		MediaPath: filePath,
+		Title:     file.Filename,
+	}
+
+	if err = r.Publisher.Publish(payload, "media_added"); err != nil {
+		log.Printf("error sending message to queue media_added %v\n", err)
+		return false, fmt.Errorf("error sending message to queue media_added %v", err)
+	}
+
+	return true, nil
 }
 
 func (r *queryResolver) Media(ctx context.Context) ([]*model.Media, error) {

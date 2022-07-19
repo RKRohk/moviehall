@@ -5,6 +5,7 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/rkrohk/moviehall/graph/model"
+	"github.com/rkrohk/moviehall/pkg/queue"
 )
 
 // This file will not be regenerated automatically.
@@ -13,7 +14,8 @@ import (
 //go:generate go run ../../testdata/gqlgen.go
 
 type Resolver struct {
-	Rooms map[string]*model.Room
-	mu    sync.Mutex
-	Auth  *auth.Client
+	Rooms     map[string]*model.Room
+	mu        sync.Mutex
+	Auth      *auth.Client
+	Publisher queue.Publisher
 }
